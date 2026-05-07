@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>MotoSafe — Cali</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&display=swap');
+
+  :root {
+    --negro: #0a0a0a;
+    --rojo: #e8000d;
+    --rojo-suave: #ff2d36;
+    --naranja: #ff6b00;
+    --blanco: #f0ede8;
+    --gris: #1a1a1a;
+    --gris2: #2a2a2a;
+    --verde: #00e676;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--negro);
+    color: var(--blanco);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  /* Fondo texturizado */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(232,0,13,0.03) 40px, rgba(232,0,13,0.03) 41px),
+      repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(232,0,13,0.03) 40px, rgba(232,0,13,0.03) 41px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    padding: 0 20px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* HEADER */
+  header {
+    padding: 32px 0 8px;
+    text-align: center;
+    border-bottom: 1px solid rgba(232,0,13,0.3);
+    padding-bottom: 20px;
+  }
+
+  .logo-line {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    letter-spacing: 4px;
+    line-height: 1;
+    color: var(--blanco);
+  }
+
+  .logo-line span {
+    color: var(--rojo);
+  }
+
+  .subtitle {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: rgba(240,237,232,0.4);
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
+
+  /* STATUS CARD */
+  .status-card {
+    background: var(--gris);
+    border: 1px solid var(--gris2);
+    border-radius: 4px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(240,237,232,0.5);
+  }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+
+  .badge-desconectado { background: rgba(232,0,13,0.15); color: var(--rojo); border: 1px solid rgba(232,0,13,0.3); }
+  .badge-conectado    { background: rgba(0,230,118,0.15); color: var(--verde); border: 1px solid rgba(0,230,118,0.3); }
+  .badge-alerta       { background: rgba(255,107,0,0.2);  color: var(--naranja); border: 1px solid rgba(255,107,0,0.4); animation: pulso 0.8s infinite; }
+  .badge-ok           { background: rgba(0,230,118,0.1);  color: var(--verde); border: 1px solid rgba(0,230,118,0.2); }
+  .badge-gris         { background: rgba(255,255,255,0.05); color: rgba(240,237,232,0.3); border: 1px solid rgba(255,255,255,0.08); }
+
+  @keyframes pulso {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+  }
+
+  /* BOTÓN PRINCIPAL */
+  .btn-conectar {
+    width: 100%;
+    padding: 22px;
+    background: var(--rojo);
+    color: var(--blanco);
+    border: none;
+    border-radius: 4px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-conectar:active { transform: scale(0.98); background: #c0000a; }
+  .btn-conectar:disabled { background: #3a0003; color: rgba(240,237,232,0.3); cursor: not-allowed; }
+
+  .btn-conectar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.08), transparent);
+    pointer-events: none;
+  }
+
+  /* COORDENADAS */
+  .coords-box {
+    background: var(--gris);
+    border: 1px solid var(--gris2);
+    border-radius: 4px;
+    padding: 18px;
+  }
+
+  .coords-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: rgba(240,237,232,0.35);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .coords-valor {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--verde);
+    letter-spacing: 0.5px;
+    word-break: break-all;
+    line-height: 1.6;
+  }
+
+  .coords-valor.sin-gps {
+    color: rgba(240,237,232,0.25);
+    font-weight: 400;
+    font-size: 11px;
+  }
+
+  /* MAPA LINK */
+  .mapa-link {
+    display: block;
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(0,230,118,0.08);
+    border: 1px solid rgba(0,230,118,0.2);
+    border-radius: 3px;
+    color: var(--verde);
+    text-decoration: none;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-align: center;
+    transition: background 0.2s;
+  }
+  .mapa-link:hover { background: rgba(0,230,118,0.14); }
+
+  /* ALERTA EMERGENCIA */
+  .alerta-emergencia {
+    display: none;
+    background: rgba(232,0,13,0.12);
+    border: 1px solid var(--rojo);
+    border-radius: 4px;
+    padding: 20px;
+    text-align: center;
+    animation: parpadeo-borde 1s infinite;
+  }
+
+  .alerta-emergencia.visible { display: block; }
+
+  @keyframes parpadeo-borde {
+    0%, 100% { border-color: var(--rojo); }
+    50%       { border-color: rgba(232,0,13,0.3); }
+  }
+
+  .alerta-titulo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: var(--rojo);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .alerta-texto {
+    font-size: 11px;
+    color: rgba(240,237,232,0.6);
+    letter-spacing: 1px;
+    line-height: 1.8;
+  }
+
+  /* LOG */
+  .log-box {
+    background: var(--gris);
+    border: 1px solid var(--gris2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .log-header {
+    padding: 10px 16px;
+    background: var(--gris2);
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: rgba(240,237,232,0.35);
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .log-header button {
+    background: none;
+    border: none;
+    color: rgba(240,237,232,0.3);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    cursor: pointer;
+    letter-spacing: 1px;
+  }
+
+  .log-contenido {
+    padding: 12px 16px;
+    max-height: 160px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .log-contenido::-webkit-scrollbar { width: 3px; }
+  .log-contenido::-webkit-scrollbar-track { background: transparent; }
+  .log-contenido::-webkit-scrollbar-thumb { background: rgba(232,0,13,0.3); }
+
+  .log-entry {
+    font-size: 11px;
+    line-height: 1.5;
+    color: rgba(240,237,232,0.5);
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .log-entry.ok    { color: var(--verde); }
+  .log-entry.error { color: var(--rojo); }
+  .log-entry.warn  { color: var(--naranja); }
+  .log-entry.info  { color: rgba(240,237,232,0.7); }
+
+  /* CONTACTO EMERGENCIA */
+  .contacto-box {
+    background: var(--gris);
+    border: 1px solid rgba(255,107,0,0.3);
+    border-radius: 4px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .contacto-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--naranja);
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .contacto-input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .contacto-input-label {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    color: rgba(240,237,232,0.35);
+    text-transform: uppercase;
+  }
+
+  .contacto-input {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 3px;
+    color: var(--blanco);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    padding: 10px 12px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .contacto-input:focus { border-color: var(--naranja); }
+  .contacto-input::placeholder { color: rgba(240,237,232,0.2); font-size: 11px; }
+
+  .btn-guardar-contacto {
+    padding: 10px;
+    background: rgba(255,107,0,0.15);
+    border: 1px solid rgba(255,107,0,0.4);
+    border-radius: 3px;
+    color: var(--naranja);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background 0.2s;
+  }
+  .btn-guardar-contacto:hover { background: rgba(255,107,0,0.25); }
+  .btn-guardar-contacto.guardado { color: var(--verde); border-color: rgba(0,230,118,0.4); background: rgba(0,230,118,0.08); }
+
+  .whatsapp-status {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: rgba(240,237,232,0.3);
+    text-align: center;
+    margin-top: 2px;
+  }
+  .whatsapp-status.ok { color: var(--verde); }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: rgba(240,237,232,0.15);
+    text-transform: uppercase;
+    padding-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="logo-line">MOTO<span>SAFE</span></div>
+    <div class="subtitle">Sistema de detección de accidentes · Cali</div>
+  </header>
+
+  <!-- STATUS -->
+  <div class="status-card">
+    <div class="status-row">
+      <span>Bluetooth</span>
+      <span class="badge badge-desconectado" id="badge-bt">DESCONECTADO</span>
+    </div>
+    <div class="status-row">
+      <span>GPS del celular</span>
+      <span class="badge badge-gris" id="badge-gps">EN ESPERA</span>
+    </div>
+    <div class="status-row">
+      <span>Estado del sistema</span>
+      <span class="badge badge-gris" id="badge-sistema">INACTIVO</span>
+    </div>
+  </div>
+
+  <!-- BOTÓN GPS PRIMERO -->
+  <button class="btn-conectar" id="btn-gps" onclick="pedirPermisoGPS()" style="background:#1a1a1a; border:1px solid #444; font-size:20px; padding:16px;">
+    📍 PASO 1 — ACTIVAR GPS
+  </button>
+
+  <!-- BOTÓN BLUETOOTH -->
+  <button class="btn-conectar" id="btn-conectar" onclick="conectarBluetooth()" disabled>
+    ⬡ PASO 2 — CONECTAR MOTO
+  </button>
+
+  <!-- CONTACTO DE EMERGENCIA -->
+  <div class="contacto-box">
+    <div class="contacto-label">🚨 Aviso de emergencia — SMS automático</div>
+
+    <div class="contacto-input-wrap">
+      <div class="contacto-input-label">Nombre del contacto</div>
+      <input class="contacto-input" id="contacto-nombre" type="text" placeholder="Ej: Mamá, Papá, Tatiana..." maxlength="30">
+    </div>
+    <div class="contacto-input-wrap">
+      <div class="contacto-input-label">Número a notificar (con código de país)</div>
+      <input class="contacto-input" id="contacto-numero" type="tel" placeholder="+573001234567" maxlength="15">
+    </div>
+
+    <div style="border-top:1px solid #333; padding-top:12px; margin-top:2px;">
+      <div class="contacto-input-label" style="margin-bottom:8px; color:rgba(240,237,232,0.5);">Credenciales Twilio (SMS automático)</div>
+      <div class="contacto-input-wrap">
+        <div class="contacto-input-label">Account SID</div>
+        <input class="contacto-input" id="twilio-sid" type="text" placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+      </div>
+      <div class="contacto-input-wrap" style="margin-top:8px;">
+        <div class="contacto-input-label">Auth Token</div>
+        <input class="contacto-input" id="twilio-token" type="password" placeholder="••••••••••••••••••••••••••••••••" autocomplete="off">
+      </div>
+      <div class="contacto-input-wrap" style="margin-top:8px;">
+        <div class="contacto-input-label">Número Twilio (remitente)</div>
+        <input class="contacto-input" id="twilio-from" type="tel" placeholder="+1415XXXXXXX" maxlength="15">
+      </div>
+      <div style="font-size:9px; color:rgba(240,237,232,0.2); letter-spacing:1px; margin-top:6px; line-height:1.6;">
+        CREA UNA CUENTA GRATIS EN TWILIO.COM · LAS CREDENCIALES SE GUARDAN SOLO EN TU DISPOSITIVO
+      </div>
+    </div>
+
+    <button class="btn-guardar-contacto" id="btn-guardar-contacto" onclick="guardarContacto()">
+      GUARDAR CONFIGURACIÓN
+    </button>
+    <div class="whatsapp-status" id="whatsapp-status">Sin configuración — el SMS no se enviará</div>
+  </div>
+
+  <!-- ALERTA EMERGENCIA -->
+  <div class="alerta-emergencia" id="alerta-emergencia">
+    <div class="alerta-titulo">⚠ EMERGENCIA</div>
+    <div class="alerta-texto" id="alerta-texto">
+      CAÍDA DETECTADA<br>
+      Enviando ubicación al dispositivo...
+    </div>
+  </div>
+
+  <!-- COORDENADAS -->
+  <div class="coords-box">
+    <div class="coords-label">Última ubicación enviada</div>
+    <div class="coords-valor sin-gps" id="coords-display">
+      — Sin datos de GPS aún —
+    </div>
+    <a class="mapa-link" id="mapa-link" href="#" target="_blank" style="display:none">
+      VER EN GOOGLE MAPS →
+    </a>
+  </div>
+
+  <!-- LOG -->
+  <div class="log-box">
+    <div class="log-header">
+      <span>Registro de eventos</span>
+      <button onclick="limpiarLog()">LIMPIAR</button>
+    </div>
+    <div class="log-contenido" id="log"></div>
+  </div>
+
+  <footer>MotoSafe v2.0 · Web Bluetooth API</footer>
+
+</div>
+
+<script>
+// ─── ESTADO ───────────────────────────────────────────────
+let btDevice = null;
+let btChar = null;
+let watchId = null;
+let ultimaLat = null;
+let ultimaLng = null;
+let escuchando = false;
+
+// Contacto de emergencia
+let contactoNombre = localStorage.getItem('ms_nombre') || '';
+let contactoNumero = localStorage.getItem('ms_numero') || '';
+let twilioSid      = localStorage.getItem('ms_twilio_sid')   || '';
+let twilioToken    = localStorage.getItem('ms_twilio_token') || '';
+let twilioFrom     = localStorage.getItem('ms_twilio_from')  || '';
+
+// ─── CONTACTO DE EMERGENCIA ───────────────────────────────
+function guardarContacto() {
+  const nombre = document.getElementById('contacto-nombre').value.trim();
+  const numero = document.getElementById('contacto-numero').value.trim();
+  const sid    = document.getElementById('twilio-sid').value.trim();
+  const token  = document.getElementById('twilio-token').value.trim();
+  const from   = document.getElementById('twilio-from').value.trim();
+
+  if (!nombre || !numero) {
+    alert('Ingresa al menos nombre y número de destino.');
+    return;
+  }
+  const numLimpio  = numero.replace(/[^\d+]/g, '');
+  const fromLimpio = from.replace(/[^\d+]/g, '');
+
+  if (numLimpio.length < 10) {
+    alert('Número de destino inválido. Incluye código de país.\nEj: +573001234567');
+    return;
+  }
+
+  contactoNombre = nombre;
+  contactoNumero = numLimpio;
+  twilioSid      = sid;
+  twilioToken    = token;
+  twilioFrom     = fromLimpio;
+
+  localStorage.setItem('ms_nombre',       nombre);
+  localStorage.setItem('ms_numero',       numLimpio);
+  localStorage.setItem('ms_twilio_sid',   sid);
+  localStorage.setItem('ms_twilio_token', token);
+  localStorage.setItem('ms_twilio_from',  fromLimpio);
+
+  const btn = document.getElementById('btn-guardar-contacto');
+  btn.textContent = '✓ GUARDADO';
+  btn.classList.add('guardado');
+  setTimeout(() => { btn.textContent = 'GUARDAR CONFIGURACIÓN'; btn.classList.remove('guardado'); }, 2000);
+
+  const tieneTwilio = sid && token && fromLimpio;
+  const statusEl = document.getElementById('whatsapp-status');
+  statusEl.classList.add('ok');
+  if (tieneTwilio) {
+    statusEl.textContent = `✓ SMS automático → ${nombre} (${numLimpio})`;
+    log(`Contacto guardado con SMS automático: ${nombre} ${numLimpio}`, 'ok');
+  } else {
+    statusEl.textContent = `✓ Contacto guardado (sin Twilio — usará WhatsApp)`;
+    statusEl.classList.remove('ok');
+    log(`Contacto guardado SIN Twilio — fallback a WhatsApp`, 'warn');
+  }
+}
+
+function cargarContactoGuardado() {
+  if (contactoNombre) document.getElementById('contacto-nombre').value = contactoNombre;
+  if (contactoNumero) document.getElementById('contacto-numero').value = contactoNumero;
+  if (twilioSid)      document.getElementById('twilio-sid').value      = twilioSid;
+  if (twilioToken)    document.getElementById('twilio-token').value    = twilioToken;
+  if (twilioFrom)     document.getElementById('twilio-from').value     = twilioFrom;
+
+  if (contactoNombre && contactoNumero) {
+    const statusEl = document.getElementById('whatsapp-status');
+    const tieneTwilio = twilioSid && twilioToken && twilioFrom;
+    statusEl.classList.add('ok');
+    statusEl.textContent = tieneTwilio
+      ? `✓ SMS automático → ${contactoNombre} (${contactoNumero})`
+      : `✓ Contacto: ${contactoNombre} (sin Twilio — usará WhatsApp)`;
+    if (!tieneTwilio) statusEl.classList.remove('ok');
+  }
+}
+
+// ─── ENVÍO EMERGENCIA ────────────────────────────────────
+async function enviarAvisoEmergencia(lat, lng) {
+  if (!contactoNumero) {
+    log('⚠ Sin contacto configurado', 'warn');
+    return;
+  }
+
+  const hora    = new Date().toLocaleTimeString('es-CO', { hour12: false });
+  const fecha   = new Date().toLocaleDateString('es-CO');
+  const mapsUrl = `https://maps.google.com/maps?q=${lat},${lng}`;
+  const mensaje =
+    `EMERGENCIA MOTOSAFE - CAIDA DE MOTO\n` +
+    `Hora: ${hora} ${fecha}\n` +
+    `Ubicacion: ${mapsUrl}\n` +
+    `Lat: ${lat.toFixed(6)} Lng: ${lng.toFixed(6)}`;
+
+  // ── Opción A: Twilio SMS 100% automático ─────────────────
+  if (twilioSid && twilioToken && twilioFrom) {
+    log('📡 Enviando SMS automático vía Twilio...', 'warn');
+    try {
+      const url  = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
+      const body = new URLSearchParams({
+        To:   contactoNumero,
+        From: twilioFrom,
+        Body: mensaje
+      });
+
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${twilioSid}:${twilioToken}`),
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        log(`✓ SMS enviado a ${contactoNombre} (SID: ${data.sid})`, 'ok');
+        document.getElementById('alerta-texto').innerHTML =
+          `CAÍDA DETECTADA<br>✅ SMS enviado automáticamente a <strong>${contactoNombre}</strong>`;
+      } else {
+        const err = await resp.json();
+        log(`Error Twilio: ${err.message} — abriendo WhatsApp`, 'error');
+        abrirWhatsAppFallback(mensaje);
+      }
+    } catch (e) {
+      log(`Error de red: ${e.message} — abriendo WhatsApp`, 'error');
+      abrirWhatsAppFallback(mensaje);
+    }
+
+  } else {
+    // ── Opción B: WhatsApp como fallback ─────────────────────
+    log('⚠ Sin Twilio configurado — abriendo WhatsApp', 'warn');
+    abrirWhatsAppFallback(mensaje);
+  }
+}
+
+function abrirWhatsAppFallback(mensaje) {
+  const waUrl = `https://wa.me/${contactoNumero.replace('+', '')}?text=${encodeURIComponent(mensaje)}`;
+  window.open(waUrl, '_blank');
+  document.getElementById('alerta-texto').innerHTML =
+    `CAÍDA DETECTADA<br>📲 Abre WhatsApp y presiona <strong>ENVIAR</strong> a ${contactoNombre}`;
+  log(`WhatsApp abierto para ${contactoNombre} — requiere confirmar envío`, 'warn');
+}
+
+// UUID del servicio Serial (HC-05 / módulo BT clásico vía BLE bridge)
+// Para ESP32 BLE Serial usa este UUID estándar:
+const SERVICE_UUID     = '0000ffe0-0000-1000-8000-00805f9b34fb';
+const CHAR_UUID_RX     = '0000ffe1-0000-1000-8000-00805f9b34fb'; // notificaciones del ESP32
+const CHAR_UUID_TX     = '0000ffe1-0000-1000-8000-00805f9b34fb'; // escritura al ESP32
+
+// ─── UTILIDADES ───────────────────────────────────────────
+function log(msg, tipo = 'info') {
+  const div = document.getElementById('log');
+  const ts = new Date().toLocaleTimeString('es-CO', { hour12: false });
+  const entry = document.createElement('div');
+  entry.className = `log-entry ${tipo}`;
+  entry.textContent = `[${ts}] ${msg}`;
+  div.appendChild(entry);
+  div.scrollTop = div.scrollHeight;
+}
+
+function limpiarLog() {
+  document.getElementById('log').innerHTML = '';
+}
+
+function setBadge(id, texto, clase) {
+  const el = document.getElementById(id);
+  el.textContent = texto;
+  el.className = `badge badge-${clase}`;
+}
+
+// ─── GPS DEL CELULAR ──────────────────────────────────────
+function pedirPermisoGPS() {
+  if (!navigator.geolocation) {
+    log('GPS no disponible en este dispositivo', 'error');
+    alert('Tu dispositivo no tiene GPS disponible.');
+    return;
+  }
+  log('Solicitando permiso de ubicación...', 'info');
+  setBadge('badge-gps', 'SOLICITANDO...', 'gris');
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      ultimaLat = pos.coords.latitude;
+      ultimaLng = pos.coords.longitude;
+      const acc = Math.round(pos.coords.accuracy);
+      log(`✓ Permiso OK. GPS: ${ultimaLat.toFixed(5)}, ${ultimaLng.toFixed(5)} (±${acc}m)`, 'ok');
+      setBadge('badge-gps', 'PERMISO OK', 'conectado');
+
+      // Habilitar botón Bluetooth
+      const btnBT = document.getElementById('btn-conectar');
+      btnBT.disabled = false;
+
+      // Actualizar botón GPS
+      const btnGPS = document.getElementById('btn-gps');
+      btnGPS.textContent = '✓ GPS ACTIVADO';
+      btnGPS.disabled = true;
+      btnGPS.style.cssText = 'background:#0a2a0a;border:1px solid #00e676;color:#00e676;width:100%;padding:16px;font-family:"Bebas Neue",sans-serif;font-size:20px;letter-spacing:3px;border-radius:4px;';
+
+      iniciarGPS();
+    },
+    (err) => {
+      log(`Error GPS: ${err.message}`, 'error');
+      setBadge('badge-gps', 'DENEGADO', 'desconectado');
+      alert('Permiso denegado.\n\nVe a Configuración > Apps > Chrome > Permisos > Ubicación.');
+    },
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
+}
+
+function iniciarGPS() {
+  watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      ultimaLat = pos.coords.latitude;
+      ultimaLng = pos.coords.longitude;
+      const acc = Math.round(pos.coords.accuracy);
+      setBadge('badge-gps', acc < 50 ? 'SEÑAL OK' : `±${acc}m`, 'conectado');
+    },
+    (err) => { log(`GPS: ${err.message}`, 'error'); },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+  );
+}
+
+function detenerGPS() {
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+}
+
+// ─── BLUETOOTH ────────────────────────────────────────────
+async function conectarBluetooth() {
+  if (!navigator.bluetooth) {
+    log('Web Bluetooth no soportado. Usa Chrome en Android.', 'error');
+    alert('Necesitas Chrome en Android para usar Web Bluetooth.');
+    return;
+  }
+
+  try {
+    log('Buscando dispositivo Bluetooth...', 'info');
+    setBadge('badge-bt', 'BUSCANDO...', 'gris');
+
+    btDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ name: 'MotoSafe_Cali' }],
+      optionalServices: [SERVICE_UUID]
+    });
+
+    log(`Dispositivo encontrado: ${btDevice.name}`, 'ok');
+    btDevice.addEventListener('gattserverdisconnected', alDesconectar);
+
+    const server  = await btDevice.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE_UUID);
+    btChar         = await service.getCharacteristic(CHAR_UUID_RX);
+
+    // Escuchar mensajes del ESP32
+    await btChar.startNotifications();
+    btChar.addEventListener('characteristicvaluechanged', recibirMensaje);
+    escuchando = true;
+
+    setBadge('badge-bt', 'CONECTADO', 'conectado');
+    setBadge('badge-sistema', 'ACTIVO', 'ok');
+    document.getElementById('btn-conectar').textContent = '✓ CONECTADO — MONITOREANDO';
+    document.getElementById('btn-conectar').disabled = true;
+
+    log(`Conectado a ${btDevice.name}`, 'ok');
+    log('Esperando eventos del sistema...', 'info');
+
+  } catch (err) {
+    log(`Error BT: ${err.message}`, 'error');
+    setBadge('badge-bt', 'ERROR', 'desconectado');
+  }
+}
+
+function recibirMensaje(event) {
+  const decoder = new TextDecoder('utf-8');
+  const msg = decoder.decode(event.target.value).trim();
+  log(`ESP32 → ${msg}`, 'warn');
+
+  if (msg === 'CMD:PEDIR_UBICACION') {
+    log('⚠ EMERGENCIA DETECTADA — enviando ubicación...', 'warn');
+    mostrarAlerta();
+    enviarUbicacion();
+    // Enviar aviso WhatsApp con la última ubicación conocida o esperar GPS
+    if (ultimaLat !== null && ultimaLng !== null) {
+      enviarAvisoEmergencia(ultimaLat, ultimaLng);
+    }
+  }
+
+  if (msg === 'OK:UBICACION_RECIBIDA') {
+    log('✓ Ubicación confirmada por el dispositivo', 'ok');
+    ocultarAlerta();
+  }
+}
+
+async function enviarUbicacion() {
+  if (ultimaLat !== null && ultimaLng !== null) {
+    await enviarDatos(`LAT:${ultimaLat.toFixed(6)},LNG:${ultimaLng.toFixed(6)}\n`);
+    mostrarCoordenadas(ultimaLat, ultimaLng);
+  } else {
+    // Pedir posición única urgente
+    log('Obteniendo posición GPS de emergencia...', 'warn');
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        ultimaLat = pos.coords.latitude;
+        ultimaLng = pos.coords.longitude;
+        await enviarDatos(`LAT:${ultimaLat.toFixed(6)},LNG:${ultimaLng.toFixed(6)}\n`);
+        mostrarCoordenadas(ultimaLat, ultimaLng);
+        log(`Ubicación de emergencia enviada`, 'ok');
+        enviarAvisoEmergencia(ultimaLat, ultimaLng);
+      },
+      (err) => { log(`No se pudo obtener GPS: ${err.message}`, 'error'); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+}
+
+async function enviarDatos(texto) {
+  if (!btChar) { log('No hay conexión BT activa', 'error'); return; }
+  try {
+    const encoder = new TextEncoder();
+    await btChar.writeValue(encoder.encode(texto));
+    log(`Enviado → ${texto.trim()}`, 'ok');
+  } catch (err) {
+    log(`Error al enviar: ${err.message}`, 'error');
+  }
+}
+
+function mostrarCoordenadas(lat, lng) {
+  const display = document.getElementById('coords-display');
+  const link    = document.getElementById('mapa-link');
+  display.className = 'coords-valor';
+  display.textContent = `LAT: ${lat.toFixed(6)}\nLNG: ${lng.toFixed(6)}`;
+  const url = `https://maps.google.com/maps?q=${lat},${lng}`;
+  link.href = url;
+  link.style.display = 'block';
+}
+
+function mostrarAlerta() {
+  document.getElementById('alerta-emergencia').classList.add('visible');
+  setBadge('badge-sistema', '⚠ EMERGENCIA', 'alerta');
+}
+
+function ocultarAlerta() {
+  document.getElementById('alerta-emergencia').classList.remove('visible');
+  setBadge('badge-sistema', 'ACTIVO', 'ok');
+}
+
+function alDesconectar() {
+  escuchando = false;
+  btChar = null;
+  setBadge('badge-bt', 'DESCONECTADO', 'desconectado');
+  setBadge('badge-sistema', 'INACTIVO', 'gris');
+  document.getElementById('btn-conectar').textContent = '⬡ RECONECTAR MOTO';
+  document.getElementById('btn-conectar').disabled = false;
+  log('Dispositivo desconectado', 'error');
+  detenerGPS();
+}
+
+// Log inicial
+log('Sistema MotoSafe listo', 'ok');
+log('Presiona el botón para conectar', 'info');
+cargarContactoGuardado();
+</script>
+</body>
+</html>
