@@ -319,6 +319,7 @@
     <div class="coords-label">Última ubicación disponible</div>
     <div class="coords-valor sin-gps" id="coords-display">— Sin datos de GPS aún —</div>
     <a class="mapa-link" id="mapa-link" href="#" target="_blank" rel="noopener" style="display:none">VER EN GOOGLE MAPS →</a>
+    <a class="mapa-link" id="tracking-link" href="track.html?id=motosafe-gio-001" target="_blank" rel="noopener">VER TRACKING ONLINE →</a>
   </div>
 
   <div class="log-box">
@@ -326,9 +327,13 @@
     <div class="log-contenido" id="log"></div>
   </div>
 
-  <footer>MotoSafe v3.0 · Web Bluetooth API · App compatible</footer>
+  <footer>MotoSafe v3.1 · Web Bluetooth API · Tracking online</footer>
 </div>
 
+
+<!-- Firebase Realtime Database para tracking online -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <script>
 let btDevice = null;
 let btChar = null;
@@ -340,9 +345,62 @@ let ultimoGpsMs = 0;
 let wakeLock = null;
 let emergenciaActiva = false;
 
+// ===============================
+// CONFIGURACIÓN ONLINE FIREBASE
+// ===============================
+// 1) Crea un proyecto en Firebase.
+// 2) Activa Realtime Database.
+// 3) Copia aquí la configuración Web App.
+// 4) Usa el mismo firebaseConfig en track.html.
+const firebaseConfig = {
+    apiKey: "AIzaSyDQzG7Z9q8CLnpZu752MnPF8Kwk8h0ktD0",
+    authDomain: "motosafe-cali-app-database.firebaseapp.com",
+    databaseURL: "https://motosafe-cali-app-database-default-rtdb.firebaseio.com",
+    projectId: "motosafe-cali-app-database",
+    storageBucket: "motosafe-cali-app-database.firebasestorage.app",
+    messagingSenderId: "494993676480",
+    appId: "1:494993676480:web:f7bc69aeb89be2492f3525",
+    measurementId: "G-2SZQ09RYPB"
+};
+
+// Cambia estos valores por algo único.
+// Ejemplo URL de visitante:
+// track.html?id=motosafe-gio-001
+const MOTO_ID = "motosafe-gio-001";
+const ONLINE_INTERVALO_MS = 5000; // sube punto cada 5 segundos
+let firebaseDB = null;
+let onlineActivo = false;
+let ultimoOnlineMs = 0;
+let puntosSubidos = 0;
+
 const SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
 const CHAR_UUID    = '0000ffe1-0000-1000-8000-00805f9b34fb';
 const NOMBRE_DISPOSITIVO = 'MotoSafe_Cali';
+
+function firebaseConfigurado() {
+  return firebaseConfig &&
+    firebaseConfig.apiKey &&
+    !firebaseConfig.apiKey.includes('PON_AQUI') &&
+    firebaseConfig.databaseURL &&
+    !firebaseConfig.databaseURL.includes('PON_AQUI');
+}
+
+function iniciarFirebaseOnline() {
+  if (!firebaseConfigurado()) {
+    console.warn('Firebase no configurado. Tracking online desactivado.');
+    return;
+  }
+
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    firebaseDB = firebase.database();
+    onlineActivo = true;
+    console.log('Firebase online activo');
+  } catch (err) {
+    console.error('Error iniciando Firebase:', err);
+    onlineActivo = false;
+  }
+}
 
 function log(msg, tipo = 'info') {
   const div = document.getElementById('log');
@@ -438,6 +496,36 @@ function actualizarGPS(pos) {
   ultimaAcc = pos.coords.accuracy;
   ultimoGpsMs = Date.now();
   mostrarCoordenadas(ultimaLat, ultimaLng, ultimaAcc, 'CELULAR');
+  subirUbicacionOnline('gps_celular');
+}
+
+async function subirUbicacionOnline(evento = 'actualizacion') {
+  if (!onlineActivo || !firebaseDB || ultimaLat === null || ultimaLng === null) return;
+
+  const ahora = Date.now();
+  if (evento === 'gps_celular' && ahora - ultimoOnlineMs < ONLINE_INTERVALO_MS) return;
+  ultimoOnlineMs = ahora;
+
+  const punto = {
+    lat: Number(ultimaLat.toFixed(6)),
+    lng: Number(ultimaLng.toFixed(6)),
+    acc: ultimaAcc ? Math.round(ultimaAcc) : null,
+    evento,
+    emergencia: emergenciaActiva,
+    bluetooth: !!btChar,
+    timestamp: ahora,
+    fecha: new Date(ahora).toISOString(),
+    fuente: 'celular_web'
+  };
+
+  try {
+    await firebaseDB.ref(`motos/${MOTO_ID}/estado`).set(punto);
+    await firebaseDB.ref(`motos/${MOTO_ID}/trayecto`).push(punto);
+    puntosSubidos++;
+    if (puntosSubidos === 1 || evento !== 'gps_celular') log('Tracking online actualizado.', 'ok');
+  } catch (err) {
+    log(`Error subiendo tracking online: ${err.message}`, 'error');
+  }
 }
 
 function gpsTexto(acc) {
@@ -491,6 +579,7 @@ function recibirMensaje(event) {
   const msg = new TextDecoder('utf-8').decode(event.target.value).trim();
   if (!msg) return;
   log(`ESP32 → ${msg}`, msg.startsWith('ER:') ? 'error' : 'warn');
+  subirUbicacionOnline(msg);
 
   switch (msg) {
     case 'CMD:PEDIR_UBICACION':
@@ -646,7 +735,10 @@ function alDesconectar() {
   log('MotoSafe desconectado. El GPS del celular queda activo como respaldo.', 'error');
 }
 
+iniciarFirebaseOnline();
 mostrarAvisosIniciales();
+if (onlineActivo) log('Tracking online activo con Firebase.', 'ok');
+else log('Tracking online desactivado: falta configurar Firebase.', 'warn');
 log('Sistema MotoSafe listo.', 'ok');
 log('Activa GPS y conecta la moto. Sin GPS/BLE, el Plan B queda de adorno caro.', 'info');
 </script>

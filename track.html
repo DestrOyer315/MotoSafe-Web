@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MotoSafe — Tracking Online</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&display=swap');
+  :root { --negro:#0a0a0a; --rojo:#e8000d; --blanco:#f0ede8; --gris:#1a1a1a; --gris2:#2a2a2a; --verde:#00e676; --naranja:#ff6b00; --azul:#00b7ff; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--negro); color:var(--blanco); font-family:'IBM Plex Mono', monospace; min-height:100vh; }
+  .wrap { max-width:760px; margin:0 auto; padding:18px; display:flex; flex-direction:column; gap:14px; }
+  header { text-align:center; padding:16px 0; border-bottom:1px solid rgba(232,0,13,.35); }
+  h1 { font-family:'Bebas Neue', sans-serif; letter-spacing:3px; font-size:46px; line-height:1; }
+  h1 span { color:var(--rojo); }
+  .sub { font-size:10px; color:rgba(240,237,232,.45); letter-spacing:2px; text-transform:uppercase; margin-top:6px; }
+  .panel { background:var(--gris); border:1px solid var(--gris2); border-radius:8px; padding:14px; }
+  .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  .item { background:#111; border:1px solid #262626; border-radius:6px; padding:10px; }
+  .label { color:rgba(240,237,232,.45); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:5px; }
+  .value { font-size:13px; color:var(--verde); word-break:break-word; }
+  .warn { color:var(--naranja); }
+  .danger { color:var(--rojo); }
+  .ok { color:var(--verde); }
+  #map { width:100%; height:440px; border-radius:8px; border:1px solid #333; background:#111; }
+  .btn { display:block; text-align:center; background:rgba(0,230,118,.08); border:1px solid rgba(0,230,118,.25); color:var(--verde); padding:12px; border-radius:6px; text-decoration:none; font-size:12px; letter-spacing:1px; }
+  .notice { color:rgba(240,237,232,.65); font-size:11px; line-height:1.6; }
+  @media (max-width:600px){ .grid{grid-template-columns:1fr;} #map{height:380px;} h1{font-size:40px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>MOTO<span>SAFE</span></h1>
+    <div class="sub">Tracking online en tiempo real</div>
+  </header>
+
+  <div class="panel notice" id="notice">
+    Cargando tracking. Si no aparece mapa, revisa que Firebase esté configurado y que el celular principal tenga abierta la app MotoSafe.
+  </div>
+
+  <div class="grid">
+    <div class="item"><div class="label">Moto ID</div><div class="value" id="moto-id">—</div></div>
+    <div class="item"><div class="label">Estado</div><div class="value" id="estado">Conectando...</div></div>
+    <div class="item"><div class="label">Última ubicación</div><div class="value" id="coords">—</div></div>
+    <div class="item"><div class="label">Última actualización</div><div class="value" id="hora">—</div></div>
+    <div class="item"><div class="label">Precisión</div><div class="value" id="precision">—</div></div>
+    <div class="item"><div class="label">Puntos de ruta</div><div class="value" id="puntos">0</div></div>
+  </div>
+
+  <div id="map"></div>
+  <a class="btn" id="maps-link" href="#" target="_blank" rel="noopener" style="display:none">ABRIR ÚLTIMA UBICACIÓN EN GOOGLE MAPS →</a>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Usa exactamente la misma configuración de Firebase que pongas en index_online_firebase.html
+const firebaseConfig = {
+  apiKey: "AIzaSyDQzG7Z9q8CLnpZu752MnPF8Kwk8h0ktD0",
+  authDomain: "motosafe-cali-app-database.firebaseapp.com",
+  databaseURL: "https://motosafe-cali-app-database-default-rtdb.firebaseio.com",
+  projectId: "motosafe-cali-app-database",
+  storageBucket: "motosafe-cali-app-database.firebasestorage.app",
+  messagingSenderId: "494993676480",
+  appId: "1:494993676480:web:f7bc69aeb89be2492f3525",
+  measurementId: "G-2SZQ09RYPB"
+};
+
+const params = new URLSearchParams(window.location.search);
+const MOTO_ID = params.get('id') || 'motosafe-gio-001';
+document.getElementById('moto-id').textContent = MOTO_ID;
+
+function firebaseConfigurado() {
+  return firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('PON_AQUI') && firebaseConfig.databaseURL && !firebaseConfig.databaseURL.includes('PON_AQUI');
+}
+
+let map = L.map('map').setView([3.4516, -76.5320], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+let marker = null;
+let linea = L.polyline([], { weight: 5 }).addTo(map);
+let primeraUbicacion = true;
+
+function formatoHora(ms) {
+  if (!ms) return '—';
+  return new Date(ms).toLocaleString('es-CO', { hour12:false });
+}
+
+function pintarEstado(data) {
+  if (!data || typeof data.lat !== 'number' || typeof data.lng !== 'number') return;
+
+  const latlng = [data.lat, data.lng];
+  document.getElementById('coords').textContent = `${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`;
+  document.getElementById('hora').textContent = formatoHora(data.timestamp);
+  document.getElementById('precision').textContent = data.acc ? `±${data.acc} m` : '—';
+  document.getElementById('estado').textContent = data.emergencia ? 'EMERGENCIA / CAÍDA' : 'Monitoreando';
+  document.getElementById('estado').className = data.emergencia ? 'value danger' : 'value ok';
+
+  const maps = document.getElementById('maps-link');
+  maps.href = `https://maps.google.com/maps?q=${data.lat},${data.lng}`;
+  maps.style.display = 'block';
+
+  if (!marker) marker = L.marker(latlng).addTo(map).bindPopup('MotoSafe');
+  marker.setLatLng(latlng);
+
+  if (primeraUbicacion) {
+    map.setView(latlng, 17);
+    primeraUbicacion = false;
+  }
+}
+
+function iniciarTracking() {
+  if (!firebaseConfigurado()) {
+    document.getElementById('estado').textContent = 'Firebase sin configurar';
+    document.getElementById('estado').className = 'value warn';
+    document.getElementById('notice').textContent = 'Falta pegar la configuración de Firebase en este archivo track.html.';
+    return;
+  }
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  db.ref(`motos/${MOTO_ID}/estado`).on('value', snap => {
+    const data = snap.val();
+    if (!data) {
+      document.getElementById('estado').textContent = 'Sin señal todavía';
+      document.getElementById('estado').className = 'value warn';
+      return;
+    }
+    pintarEstado(data);
+  });
+
+  db.ref(`motos/${MOTO_ID}/trayecto`).limitToLast(300).on('value', snap => {
+    const puntos = [];
+    snap.forEach(child => {
+      const p = child.val();
+      if (p && typeof p.lat === 'number' && typeof p.lng === 'number') puntos.push([p.lat, p.lng]);
+    });
+    document.getElementById('puntos').textContent = puntos.length;
+    linea.setLatLngs(puntos);
+    if (puntos.length > 1) map.fitBounds(linea.getBounds(), { padding:[30,30] });
+  });
+}
+
+iniciarTracking();
+</script>
+</body>
+</html>
