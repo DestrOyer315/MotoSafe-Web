@@ -2,42 +2,87 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>MotoSafe — Tracking Online</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>MotoSafe — Tracking Online Pro</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&display=swap');
-  :root { --negro:#0a0a0a; --rojo:#e8000d; --blanco:#f0ede8; --gris:#1a1a1a; --gris2:#2a2a2a; --verde:#00e676; --naranja:#ff6b00; --azul:#00b7ff; }
-  * { box-sizing:border-box; margin:0; padding:0; }
+  :root {
+    --negro:#0a0a0a; --rojo:#e8000d; --blanco:#f0ede8; --gris:#1a1a1a; --gris2:#2a2a2a;
+    --verde:#00e676; --naranja:#ff6b00; --azul:#00b7ff; --muted:rgba(240,237,232,.56);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color: transparent; }
   body { background:var(--negro); color:var(--blanco); font-family:'IBM Plex Mono', monospace; min-height:100vh; }
-  .wrap { max-width:760px; margin:0 auto; padding:18px; display:flex; flex-direction:column; gap:14px; }
+  body::before {
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(232,0,13,.03) 40px, rgba(232,0,13,.03) 41px),
+      repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(232,0,13,.03) 40px, rgba(232,0,13,.03) 41px);
+  }
+  .wrap { position:relative; z-index:1; max-width:860px; margin:0 auto; padding:18px; display:flex; flex-direction:column; gap:14px; }
   header { text-align:center; padding:16px 0; border-bottom:1px solid rgba(232,0,13,.35); }
   h1 { font-family:'Bebas Neue', sans-serif; letter-spacing:3px; font-size:46px; line-height:1; }
   h1 span { color:var(--rojo); }
   .sub { font-size:10px; color:rgba(240,237,232,.45); letter-spacing:2px; text-transform:uppercase; margin-top:6px; }
   .panel { background:var(--gris); border:1px solid var(--gris2); border-radius:8px; padding:14px; }
+  .notice { color:var(--muted); font-size:11px; line-height:1.65; }
+  .notice strong { color:var(--blanco); }
+  .emergency-banner { display:none; border-color:rgba(232,0,13,.8); background:rgba(232,0,13,.14); animation:pulseBorder .8s infinite; }
+  .emergency-banner.visible { display:block; }
+  .emergency-title { font-family:'Bebas Neue', sans-serif; font-size:34px; color:var(--rojo); letter-spacing:2px; line-height:1; }
+  .emergency-text { margin-top:7px; color:rgba(240,237,232,.72); font-size:11px; line-height:1.7; }
+  @keyframes pulseBorder { 0%,100%{ border-color:rgba(232,0,13,.9); } 50%{ border-color:rgba(232,0,13,.25); } }
   .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
-  .item { background:#111; border:1px solid #262626; border-radius:6px; padding:10px; }
-  .label { color:rgba(240,237,232,.45); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:5px; }
-  .value { font-size:13px; color:var(--verde); word-break:break-word; }
-  .warn { color:var(--naranja); }
-  .danger { color:var(--rojo); }
-  .ok { color:var(--verde); }
-  #map { width:100%; height:440px; border-radius:8px; border:1px solid #333; background:#111; }
-  .btn { display:block; text-align:center; background:rgba(0,230,118,.08); border:1px solid rgba(0,230,118,.25); color:var(--verde); padding:12px; border-radius:6px; text-decoration:none; font-size:12px; letter-spacing:1px; }
-  .notice { color:rgba(240,237,232,.65); font-size:11px; line-height:1.6; }
-  @media (max-width:600px){ .grid{grid-template-columns:1fr;} #map{height:380px;} h1{font-size:40px;} }
+  .grid-3 { grid-template-columns:repeat(3,1fr); }
+  .item { background:#111; border:1px solid #262626; border-radius:6px; padding:10px; min-height:66px; }
+  .label { color:rgba(240,237,232,.45); font-size:9px; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
+  .value { font-size:13px; color:var(--verde); word-break:break-word; line-height:1.35; }
+  .warn { color:var(--naranja) !important; }
+  .danger { color:var(--rojo) !important; }
+  .ok { color:var(--verde) !important; }
+  .info { color:var(--azul) !important; }
+  .muted { color:rgba(240,237,232,.42) !important; }
+  .map-wrap { position:relative; }
+  #map { width:100%; height:500px; border-radius:8px; border:1px solid #333; background:#111; overflow:hidden; }
+  .map-badge {
+    position:absolute; top:12px; left:12px; z-index:500; background:rgba(10,10,10,.82); border:1px solid rgba(255,255,255,.12);
+    border-radius:6px; padding:8px 10px; font-size:10px; color:var(--muted); letter-spacing:.8px; backdrop-filter:blur(8px);
+  }
+  .map-badge span { color:var(--verde); }
+  .actions { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .btn {
+    display:block; width:100%; text-align:center; background:rgba(0,230,118,.08); border:1px solid rgba(0,230,118,.25);
+    color:var(--verde); padding:12px; border-radius:6px; text-decoration:none; font-size:11px; letter-spacing:1px;
+    font-family:'IBM Plex Mono', monospace; cursor:pointer;
+  }
+  .btn.warn-btn { background:rgba(255,107,0,.08); border-color:rgba(255,107,0,.28); color:var(--naranja); }
+  .btn.danger-btn { background:rgba(232,0,13,.08); border-color:rgba(232,0,13,.28); color:var(--rojo); }
+  .btn:active { transform:scale(.985); }
+  .log { max-height:150px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
+  .log-entry { color:rgba(240,237,232,.54); font-size:10px; line-height:1.45; border-bottom:1px solid rgba(255,255,255,.05); padding-bottom:5px; }
+  .small { font-size:10px; color:rgba(240,237,232,.42); line-height:1.6; }
+  @media (max-width:700px){
+    .grid, .grid-3, .actions { grid-template-columns:1fr; }
+    #map { height:430px; }
+    h1 { font-size:40px; }
+    .wrap { padding:14px; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <h1>MOTO<span>SAFE</span></h1>
-    <div class="sub">Tracking online en tiempo real</div>
+    <div class="sub">Tracking online pro · Estado vivo · Ruta · Emergencia</div>
   </header>
 
+  <div class="panel emergency-banner" id="emergency-banner">
+    <div class="emergency-title">EMERGENCIA ACTIVA</div>
+    <div class="emergency-text" id="emergency-text">Caída detectada. Última ubicación recibida abajo.</div>
+  </div>
+
   <div class="panel notice" id="notice">
-    Cargando tracking. Si no aparece mapa, revisa que Firebase esté configurado y que el celular principal tenga abierta la app MotoSafe.
+    Cargando tracking. Esta pantalla solo lee datos; la ubicación la sube el celular principal desde <strong>index.html</strong>.
   </div>
 
   <div class="grid">
@@ -45,19 +90,47 @@
     <div class="item"><div class="label">Estado</div><div class="value" id="estado">Conectando...</div></div>
     <div class="item"><div class="label">Última ubicación</div><div class="value" id="coords">—</div></div>
     <div class="item"><div class="label">Última actualización</div><div class="value" id="hora">—</div></div>
-    <div class="item"><div class="label">Precisión</div><div class="value" id="precision">—</div></div>
-    <div class="item"><div class="label">Puntos de ruta</div><div class="value" id="puntos">0</div></div>
+    <div class="item"><div class="label">Antigüedad de señal</div><div class="value" id="antiguedad">—</div></div>
+    <div class="item"><div class="label">Precisión GPS</div><div class="value" id="precision">—</div></div>
   </div>
 
-  <div id="map"></div>
-  <a class="btn" id="maps-link" href="#" target="_blank" rel="noopener" style="display:none">ABRIR ÚLTIMA UBICACIÓN EN GOOGLE MAPS →</a>
+  <div class="grid grid-3">
+    <div class="item"><div class="label">Puntos de ruta</div><div class="value" id="puntos">0</div></div>
+    <div class="item"><div class="label">Distancia estimada</div><div class="value" id="distancia">—</div></div>
+    <div class="item"><div class="label">Velocidad estimada</div><div class="value" id="velocidad">—</div></div>
+    <div class="item"><div class="label">Fuente</div><div class="value" id="fuente">—</div></div>
+    <div class="item"><div class="label">Evento</div><div class="value" id="evento">—</div></div>
+    <div class="item"><div class="label">Bluetooth</div><div class="value" id="bluetooth">—</div></div>
+  </div>
+
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="map-badge" id="map-badge">Señal: <span>esperando</span></div>
+  </div>
+
+  <div class="actions">
+    <a class="btn" id="maps-link" href="#" target="_blank" rel="noopener" style="display:none">GOOGLE MAPS</a>
+    <a class="btn" id="waze-link" href="#" target="_blank" rel="noopener" style="display:none">WAZE</a>
+    <button class="btn" id="btn-follow" onclick="toggleFollow()">SEGUIR: ON</button>
+    <button class="btn warn-btn" onclick="copiarLink()">COPIAR LINK</button>
+    <button class="btn" onclick="centrarMoto()">CENTRAR MOTO</button>
+    <button class="btn" onclick="ajustarRuta()">VER RUTA</button>
+    <button class="btn" onclick="compartirWhatsApp()">WHATSAPP</button>
+    <button class="btn danger-btn" onclick="limpiarVistaLocal()">LIMPIAR VISTA</button>
+  </div>
+
+  <div class="panel">
+    <div class="label">Últimos eventos</div>
+    <div class="log" id="event-log"></div>
+    <div class="small" style="margin-top:10px;">La distancia y velocidad son estimadas desde los puntos recibidos. Si el GPS salta, la ruta puede inflarse; no tomes ese número como odómetro legal, sino como referencia operativa.</div>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// Usa exactamente la misma configuración de Firebase que pongas en index_online_firebase.html
+// Usa exactamente la misma configuración de Firebase que pongas en index.html
 const firebaseConfig = {
   apiKey: "AIzaSyDQzG7Z9q8CLnpZu752MnPF8Kwk8h0ktD0",
   authDomain: "motosafe-cali-app-database.firebaseapp.com",
@@ -73,81 +146,265 @@ const params = new URLSearchParams(window.location.search);
 const MOTO_ID = params.get('id') || 'motosafe-gio-001';
 document.getElementById('moto-id').textContent = MOTO_ID;
 
-function firebaseConfigurado() {
-  return firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('PON_AQUI') && firebaseConfig.databaseURL && !firebaseConfig.databaseURL.includes('PON_AQUI');
-}
-
+const MAX_PUNTOS_RUTA = 500;
+const SEÑAL_OK_MS = 15000;
+const SEÑAL_LENTA_MS = 60000;
+let ultimoEstado = null;
+let puntosRuta = [];
+let seguirMoto = true;
+let primeraUbicacion = true;
 let map = L.map('map').setView([3.4516, -76.5320], 13);
+
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
 let marker = null;
-let linea = L.polyline([], { weight: 5 }).addTo(map);
-let primeraUbicacion = true;
+let accuracyCircle = null;
+let linea = L.polyline([], { weight: 5, opacity: .9 }).addTo(map);
+let inicioMarker = null;
+let finMarker = null;
+
+function firebaseConfigurado() {
+  return firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('PON_AQUI') && firebaseConfig.databaseURL && !firebaseConfig.databaseURL.includes('PON_AQUI');
+}
+
+function setText(id, text) { document.getElementById(id).textContent = text; }
+function setClass(id, cls) { document.getElementById(id).className = `value ${cls || ''}`; }
 
 function formatoHora(ms) {
   if (!ms) return '—';
   return new Date(ms).toLocaleString('es-CO', { hour12:false });
 }
 
+function tiempoRelativo(ms) {
+  if (!ms) return '—';
+  const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+  if (s < 60) return `hace ${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `hace ${m}min ${s % 60}s`;
+  const h = Math.floor(m / 60);
+  return `hace ${h}h ${m % 60}min`;
+}
+
+function haversineKm(a, b) {
+  const R = 6371;
+  const dLat = (b.lat - a.lat) * Math.PI / 180;
+  const dLng = (b.lng - a.lng) * Math.PI / 180;
+  const lat1 = a.lat * Math.PI / 180;
+  const lat2 = b.lat * Math.PI / 180;
+  const x = Math.sin(dLat/2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng/2) ** 2;
+  return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+function calcularDistanciaKm(puntos) {
+  let km = 0;
+  for (let i = 1; i < puntos.length; i++) {
+    const tramo = haversineKm(puntos[i - 1], puntos[i]);
+    // Filtro básico contra saltos imposibles por GPS: ignora tramos mayores a 2 km entre puntos consecutivos.
+    if (tramo <= 2) km += tramo;
+  }
+  return km;
+}
+
+function calcularVelocidadKmh(puntos) {
+  if (puntos.length < 2) return null;
+  const a = puntos[puntos.length - 2];
+  const b = puntos[puntos.length - 1];
+  if (!a.timestamp || !b.timestamp || b.timestamp <= a.timestamp) return null;
+  const horas = (b.timestamp - a.timestamp) / 3600000;
+  const km = haversineKm(a, b);
+  const kmh = km / horas;
+  return kmh > 250 ? null : kmh;
+}
+
+function actualizarSaludSeñal() {
+  const badge = document.getElementById('map-badge');
+  if (!ultimoEstado || !ultimoEstado.timestamp) {
+    setText('antiguedad', '—');
+    badge.innerHTML = 'Señal: <span>esperando</span>';
+    return;
+  }
+  const age = Date.now() - ultimoEstado.timestamp;
+  setText('antiguedad', tiempoRelativo(ultimoEstado.timestamp));
+  if (age <= SEÑAL_OK_MS) {
+    setText('estado', ultimoEstado.emergencia ? 'EMERGENCIA / CAÍDA' : 'EN VIVO');
+    setClass('estado', ultimoEstado.emergencia ? 'danger' : 'ok');
+    badge.innerHTML = 'Señal: <span>en vivo</span>';
+  } else if (age <= SEÑAL_LENTA_MS) {
+    setText('estado', ultimoEstado.emergencia ? 'EMERGENCIA / SEÑAL LENTA' : 'SEÑAL LENTA');
+    setClass('estado', 'warn');
+    badge.innerHTML = 'Señal: <span style="color:var(--naranja)">lenta</span>';
+  } else {
+    setText('estado', 'SIN ACTUALIZACIÓN');
+    setClass('estado', 'danger');
+    badge.innerHTML = 'Señal: <span style="color:var(--rojo)">sin actualización</span>';
+  }
+}
+
 function pintarEstado(data) {
   if (!data || typeof data.lat !== 'number' || typeof data.lng !== 'number') return;
-
+  ultimoEstado = data;
   const latlng = [data.lat, data.lng];
-  document.getElementById('coords').textContent = `${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`;
-  document.getElementById('hora').textContent = formatoHora(data.timestamp);
-  document.getElementById('precision').textContent = data.acc ? `±${data.acc} m` : '—';
-  document.getElementById('estado').textContent = data.emergencia ? 'EMERGENCIA / CAÍDA' : 'Monitoreando';
-  document.getElementById('estado').className = data.emergencia ? 'value danger' : 'value ok';
+
+  setText('coords', `${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`);
+  setText('hora', formatoHora(data.timestamp));
+  setText('precision', data.acc ? `±${data.acc} m` : '—');
+  setText('fuente', data.fuente || '—');
+  setText('evento', data.evento || '—');
+  setText('bluetooth', data.bluetooth ? 'Conectado' : 'No reportado');
+  setClass('bluetooth', data.bluetooth ? 'ok' : 'muted');
+
+  const emergency = document.getElementById('emergency-banner');
+  if (data.emergencia) {
+    emergency.classList.add('visible');
+    document.getElementById('emergency-text').textContent = `Última ubicación: ${data.lat.toFixed(6)}, ${data.lng.toFixed(6)} · ${tiempoRelativo(data.timestamp)}`;
+  } else {
+    emergency.classList.remove('visible');
+  }
 
   const maps = document.getElementById('maps-link');
   maps.href = `https://maps.google.com/maps?q=${data.lat},${data.lng}`;
   maps.style.display = 'block';
+  const waze = document.getElementById('waze-link');
+  waze.href = `https://waze.com/ul?ll=${data.lat},${data.lng}&navigate=yes`;
+  waze.style.display = 'block';
 
   if (!marker) marker = L.marker(latlng).addTo(map).bindPopup('MotoSafe');
   marker.setLatLng(latlng);
+  marker.setPopupContent(data.emergencia ? 'MotoSafe · EMERGENCIA' : 'MotoSafe · última ubicación');
 
-  if (primeraUbicacion) {
-    map.setView(latlng, 17);
+  if (accuracyCircle) accuracyCircle.remove();
+  if (data.acc && data.acc > 0 && data.acc <= 1000) {
+    accuracyCircle = L.circle(latlng, { radius: data.acc, weight: 1, opacity: .5, fillOpacity: .08 }).addTo(map);
+  }
+
+  if (primeraUbicacion || seguirMoto) {
+    map.setView(latlng, primeraUbicacion ? 17 : map.getZoom(), { animate:true });
     primeraUbicacion = false;
   }
+  actualizarSaludSeñal();
+}
+
+function pintarRuta(snapshot) {
+  const puntos = [];
+  snapshot.forEach(child => {
+    const p = child.val();
+    if (p && typeof p.lat === 'number' && typeof p.lng === 'number') {
+      puntos.push({ lat:p.lat, lng:p.lng, timestamp:p.timestamp || null });
+    }
+  });
+  puntosRuta = puntos;
+  const latlngs = puntos.map(p => [p.lat, p.lng]);
+  linea.setLatLngs(latlngs);
+  setText('puntos', puntos.length.toString());
+
+  const km = calcularDistanciaKm(puntos);
+  setText('distancia', puntos.length > 1 ? `${km.toFixed(km < 10 ? 2 : 1)} km` : '—');
+
+  const kmh = calcularVelocidadKmh(puntos);
+  setText('velocidad', kmh === null ? '—' : `${Math.round(kmh)} km/h`);
+
+  if (inicioMarker) inicioMarker.remove();
+  if (finMarker) finMarker.remove();
+  if (latlngs.length > 0) inicioMarker = L.circleMarker(latlngs[0], { radius:5, weight:2, fillOpacity:.8 }).addTo(map).bindPopup('Inicio de ruta');
+  if (latlngs.length > 1) finMarker = L.circleMarker(latlngs[latlngs.length - 1], { radius:6, weight:2, fillOpacity:.9 }).addTo(map).bindPopup('Último punto');
+
+  if (primeraUbicacion && latlngs.length > 1) ajustarRuta();
+}
+
+function agregarEvento(data) {
+  const log = document.getElementById('event-log');
+  const div = document.createElement('div');
+  div.className = 'log-entry';
+  const hora = data && data.timestamp ? formatoHora(data.timestamp) : new Date().toLocaleTimeString('es-CO', { hour12:false });
+  div.textContent = `${hora} · ${data?.evento || 'actualización'} · ${data?.fuente || 'fuente no reportada'} · ${data?.emergencia ? 'EMERGENCIA' : 'monitoreo'}`;
+  log.prepend(div);
+  while (log.children.length > 15) log.removeChild(log.lastChild);
 }
 
 function iniciarTracking() {
   if (!firebaseConfigurado()) {
-    document.getElementById('estado').textContent = 'Firebase sin configurar';
-    document.getElementById('estado').className = 'value warn';
+    setText('estado', 'Firebase sin configurar');
+    setClass('estado', 'warn');
     document.getElementById('notice').textContent = 'Falta pegar la configuración de Firebase en este archivo track.html.';
     return;
   }
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-  db.ref(`motos/${MOTO_ID}/estado`).on('value', snap => {
-    const data = snap.val();
-    if (!data) {
-      document.getElementById('estado').textContent = 'Sin señal todavía';
-      document.getElementById('estado').className = 'value warn';
-      return;
-    }
-    pintarEstado(data);
-  });
-
-  db.ref(`motos/${MOTO_ID}/trayecto`).limitToLast(300).on('value', snap => {
-    const puntos = [];
-    snap.forEach(child => {
-      const p = child.val();
-      if (p && typeof p.lat === 'number' && typeof p.lng === 'number') puntos.push([p.lat, p.lng]);
+    db.ref(`motos/${MOTO_ID}/estado`).on('value', snap => {
+      const data = snap.val();
+      if (!data) {
+        setText('estado', 'Sin señal todavía');
+        setClass('estado', 'warn');
+        document.getElementById('notice').textContent = 'No hay datos aún. Abre index.html en el celular principal, activa GPS y deja la app abierta.';
+        return;
+      }
+      document.getElementById('notice').textContent = 'Tracking conectado. Mostrando última ubicación y ruta recibida desde Firebase.';
+      pintarEstado(data);
+      agregarEvento(data);
+    }, err => {
+      setText('estado', 'Error leyendo estado');
+      setClass('estado', 'danger');
+      document.getElementById('notice').textContent = `Firebase rechazó la lectura de estado: ${err.message}`;
     });
-    document.getElementById('puntos').textContent = puntos.length;
-    linea.setLatLngs(puntos);
-    if (puntos.length > 1) map.fitBounds(linea.getBounds(), { padding:[30,30] });
-  });
+
+    db.ref(`motos/${MOTO_ID}/trayecto`).limitToLast(MAX_PUNTOS_RUTA).on('value', snap => {
+      pintarRuta(snap);
+    }, err => {
+      document.getElementById('notice').textContent = `Firebase rechazó la lectura de la ruta: ${err.message}`;
+    });
+  } catch (err) {
+    setText('estado', 'Error Firebase');
+    setClass('estado', 'danger');
+    document.getElementById('notice').textContent = `No se pudo iniciar Firebase: ${err.message}`;
+  }
 }
 
+function toggleFollow() {
+  seguirMoto = !seguirMoto;
+  document.getElementById('btn-follow').textContent = `SEGUIR: ${seguirMoto ? 'ON' : 'OFF'}`;
+}
+
+function centrarMoto() {
+  if (!ultimoEstado) return;
+  map.setView([ultimoEstado.lat, ultimoEstado.lng], 17, { animate:true });
+}
+
+function ajustarRuta() {
+  if (!puntosRuta.length) return;
+  const latlngs = puntosRuta.map(p => [p.lat, p.lng]);
+  if (latlngs.length === 1) map.setView(latlngs[0], 17);
+  else map.fitBounds(latlngs, { padding:[30,30] });
+}
+
+async function copiarLink() {
+  try {
+    await navigator.clipboard.writeText(window.location.href);
+    document.getElementById('notice').textContent = 'Link copiado al portapapeles.';
+  } catch (err) {
+    document.getElementById('notice').textContent = 'No se pudo copiar automáticamente. Copia el enlace desde la barra del navegador.';
+  }
+}
+
+function compartirWhatsApp() {
+  const url = ultimoEstado
+    ? `https://wa.me/?text=${encodeURIComponent(`MotoSafe ubicación: https://maps.google.com/maps?q=${ultimoEstado.lat},${ultimoEstado.lng}\nTracking: ${window.location.href}`)}`
+    : `https://wa.me/?text=${encodeURIComponent(`Tracking MotoSafe: ${window.location.href}`)}`;
+  window.open(url, '_blank', 'noopener');
+}
+
+function limpiarVistaLocal() {
+  // Solo limpia la pantalla del visitante; no borra Firebase.
+  document.getElementById('event-log').innerHTML = '';
+  document.getElementById('notice').textContent = 'Vista local limpiada. No se borraron datos de Firebase.';
+}
+
+setInterval(actualizarSaludSeñal, 5000);
 iniciarTracking();
 </script>
 </body>
