@@ -404,10 +404,9 @@
     PASO 2 — CONECTAR MOTO
   </button>
 
-  <div class="grid-2">
-    <button class="btn btn-green" onclick="iniciarNuevoRecorrido()">INICIAR NUEVO RECORRIDO</button>
-    <button class="btn btn-orange" onclick="finalizarEmergencia()">FINALIZAR / GUARDAR INCIDENTE</button>
-  </div>
+  <button class="btn btn-green" onclick="iniciarNuevoRecorrido()">
+    INICIAR NUEVO RECORRIDO
+  </button>
 
   <div class="alerta-emergencia" id="alerta-emergencia">
     <div class="alerta-titulo">EMERGENCIA</div>
@@ -421,14 +420,6 @@
     <div class="coords-label">Última ubicación disponible</div>
     <div class="coords-valor sin-gps" id="coords-display">— Sin datos de GPS aún —</div>
     <a class="mapa-link" id="mapa-link" href="#" target="_blank" rel="noopener" style="display:none">VER EN GOOGLE MAPS →</a>
-    <a class="mapa-link" id="tracking-link" href="track.html?id=motosafe-gio-001" target="_blank" rel="noopener">VER LINK DE AUXILIO ONLINE →</a>
-  </div>
-
-  <div class="grid-2">
-    <button class="btn btn-blue" onclick="copiarLinkAuxilio()">COPIAR LINK AUXILIO</button>
-    <button class="btn btn-green" onclick="compartirWhatsApp()">WHATSAPP AUXILIO</button>
-    <button class="btn btn-secondary" onclick="copiarDatosOperador()">COPIAR DATOS 123</button>
-    <button class="btn btn-orange" onclick="enviarUbicacionActual()">ENVIAR GPS AL ESP32</button>
   </div>
 
   <div class="panel">
@@ -448,7 +439,7 @@
     </div>
   </details>
 
-  <footer>MotoSafe v10 · Conductor + Admin seguro · No borrar evidencia</footer>
+  <footer>MotoSafe v11 · Modo conductor · Nuevo recorrido</footer>
 </div>
 
 <!-- Firebase Realtime Database para tracking online -->
@@ -474,14 +465,12 @@ let ultimaSubidaOkMs = null;
 let recorridoIniciadoMs = null;
 let recorridoId = null;
 let puntosSubidos = 0;
-let incidentePendiente = false;
 
 const MIN_REENVIO_UBICACION_BLE_MS = 3500;
 const ONLINE_INTERVALO_MS = 5000;
 const RUTA_MIN_DISTANCIA_M = 8;
 const RUTA_MAX_SIN_PUNTO_MS = 60000;
 const GPS_RECIENTE_MS = 12000;
-const MAX_PUNTOS_INCIDENTE = 120;
 
 // ===============================
 // CONFIGURACIÓN ONLINE FIREBASE
@@ -902,7 +891,6 @@ function recibirMensaje(event) {
 function activarEmergencia(titulo, texto) {
   if (!emergenciaActiva) emergenciaInicioMs = Date.now();
   emergenciaActiva = true;
-  incidentePendiente = true;
   mostrarAlerta(`${titulo}<br>${texto}`);
   setBadge('badge-sistema', 'EMERGENCIA', 'alerta');
   actualizarHero('EMERGENCIA ACTIVA', texto.replace(/<br>/g, ' '), true);
@@ -1013,7 +1001,7 @@ async function iniciarNuevoRecorrido() {
     alert('Firebase no está activo. No se puede limpiar/iniciar recorrido online.');
     return;
   }
-  const ok = confirm('¿Iniciar nuevo recorrido? Esto limpia la ruta actual visible, pero NO borra incidentes históricos.');
+  const ok = confirm('¿Iniciar nuevo recorrido? Esto limpia la ruta actual visible y empieza un recorrido nuevo.');
   if (!ok) return;
 
   try {
@@ -1033,113 +1021,12 @@ async function iniciarNuevoRecorrido() {
     });
     setMini('recorrido-estado', `Activo ${new Date(recorridoIniciadoMs).toLocaleTimeString('es-CO', { hour12:false })}`, 'ok');
     setMini('puntos-online', '0');
-    log('Nuevo recorrido iniciado. Ruta actual limpiada sin borrar incidentes.', 'ok');
+    log('Nuevo recorrido iniciado. Ruta actual limpiada correctamente.', 'ok');
     subirUbicacionOnline('nuevo_recorrido', true);
   } catch (err) {
     log(`Error iniciando nuevo recorrido: ${err.message}`, 'error');
     alert(`Firebase no permitió iniciar recorrido: ${err.message}`);
   }
-}
-
-async function finalizarEmergencia() {
-  if (!onlineActivo || !firebaseDB) {
-    alert('Firebase no está activo. No se puede guardar incidente.');
-    return;
-  }
-  const ok = confirm('¿Finalizar y guardar incidente/resumen? No se borrará la última ubicación pública.');
-  if (!ok) return;
-
-  try {
-    const incidenteId = await guardarIncidenteHistorico('finalizado_manual');
-    emergenciaActiva = false;
-    incidentePendiente = false;
-    ocultarAlerta();
-    setBadge('badge-sistema', btChar ? 'MONITOREANDO' : 'INACTIVO', btChar ? 'ok' : 'gris');
-    actualizarHero(btChar ? 'MONITOREANDO' : 'FINALIZADO', `Incidente guardado: ${incidenteId}`, false);
-    await subirUbicacionOnline('emergencia_finalizada', true);
-    log(`Incidente guardado: ${incidenteId}`, 'ok');
-  } catch (err) {
-    log(`Error guardando incidente: ${err.message}`, 'error');
-    alert(`No se pudo guardar el incidente: ${err.message}`);
-  }
-}
-
-async function guardarIncidenteHistorico(motivo = 'manual') {
-  const ahora = Date.now();
-  const id = `inc_${new Date(ahora).toISOString().replace(/[:.]/g, '-')}`;
-  let ultimosPuntos = [];
-
-  try {
-    const snap = await firebaseDB.ref(`motos/${MOTO_ID}/trayecto`).limitToLast(MAX_PUNTOS_INCIDENTE).once('value');
-    snap.forEach(child => {
-      const p = child.val();
-      if (p && typeof p.lat === 'number' && typeof p.lng === 'number') ultimosPuntos.push(p);
-    });
-  } catch (err) {
-    log(`No se pudo copiar ruta para incidente: ${err.message}`, 'warn');
-  }
-
-  const resumen = {
-    id,
-    motoId: MOTO_ID,
-    motivo,
-    emergenciaInicioMs: emergenciaInicioMs || null,
-    guardadoMs: ahora,
-    fecha: new Date(ahora).toISOString(),
-    ultimaUbicacion: ultimaLat !== null && ultimaLng !== null ? {
-      lat: Number(ultimaLat.toFixed(6)),
-      lng: Number(ultimaLng.toFixed(6)),
-      acc: ultimaAcc ? Math.round(ultimaAcc) : null,
-      timestamp: ultimoGpsMs || ahora,
-      maps: `https://maps.google.com/maps?q=${ultimaLat},${ultimaLng}`
-    } : null,
-    trackingUrl: obtenerTrackingUrl(),
-    bluetoothConectado: !!btChar,
-    puntosRutaGuardados: ultimosPuntos.length,
-    recorridoId: recorridoId || null,
-    ruta: ultimosPuntos
-  };
-
-  await firebaseDB.ref(`motos/${MOTO_ID}/incidentes/${id}`).set(resumen);
-  return id;
-}
-
-function obtenerTrackingUrl() {
-  return new URL(`track.html?id=${encodeURIComponent(MOTO_ID)}`, window.location.href).href;
-}
-
-function obtenerMapsUrl() {
-  if (ultimaLat === null || ultimaLng === null) return '';
-  return `https://maps.google.com/maps?q=${ultimaLat},${ultimaLng}`;
-}
-
-async function copiarTexto(texto, okMsg) {
-  try {
-    await navigator.clipboard.writeText(texto);
-    log(okMsg, 'ok');
-    alert(okMsg);
-  } catch (err) {
-    log('No se pudo copiar automáticamente. Copia manualmente desde pantalla.', 'warn');
-    alert('No se pudo copiar automáticamente. Mantén presionado el texto o copia el enlace desde el navegador.');
-  }
-}
-
-function copiarLinkAuxilio() {
-  copiarTexto(obtenerTrackingUrl(), 'Link de auxilio copiado.');
-}
-
-function copiarDatosOperador() {
-  const maps = obtenerMapsUrl() || 'Sin ubicación GPS todavía';
-  const texto = `MotoSafe Cali\nEstado: ${emergenciaActiva ? 'EMERGENCIA ACTIVA' : 'Monitoreando'}\nMoto ID: ${MOTO_ID}\nUbicación: ${maps}\nTracking: ${obtenerTrackingUrl()}\nActualizado: ${ultimoGpsMs ? new Date(ultimoGpsMs).toLocaleString('es-CO', { hour12:false }) : 'sin dato'}\nPrecisión: ${ultimaAcc ? Math.round(ultimaAcc) + ' m' : 'sin dato'}`;
-  copiarTexto(texto, 'Datos para operador copiados.');
-}
-
-function compartirWhatsApp() {
-  const maps = obtenerMapsUrl();
-  const texto = emergenciaActiva
-    ? `🚨 MotoSafe: emergencia activa.\nUbicación: ${maps || 'sin GPS aún'}\nTracking: ${obtenerTrackingUrl()}`
-    : `MotoSafe tracking online:\n${obtenerTrackingUrl()}${maps ? `\nÚltima ubicación: ${maps}` : ''}`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank', 'noopener');
 }
 
 function actualizarUIRecorridoInicial() {
