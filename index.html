@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>MotoSafe — Cali</title>
+<title>MotoSafe — Control Conductor</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&display=swap');
 
@@ -16,6 +16,7 @@
     --gris2: #2a2a2a;
     --verde: #00e676;
     --azul: #00b7ff;
+    --muted: rgba(240,237,232,.58);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -46,15 +47,15 @@
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 440px;
-    padding: env(safe-area-inset-top) 20px 40px;
+    max-width: 480px;
+    padding: env(safe-area-inset-top) 18px 36px;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 16px;
   }
 
   header {
-    padding: 30px 0 18px;
+    padding: 24px 0 16px;
     text-align: center;
     border-bottom: 1px solid rgba(232,0,13,0.3);
   }
@@ -70,23 +71,57 @@
 
   .subtitle {
     font-size: 10px;
-    letter-spacing: 3px;
-    color: rgba(240,237,232,0.42);
+    letter-spacing: 2.6px;
+    color: rgba(240,237,232,0.45);
     margin-top: 6px;
     text-transform: uppercase;
   }
 
-  .status-card, .coords-box, .log-box, .notice-box {
+  .panel, .status-card, .coords-box, .log-box, .notice-box, .danger-box {
     background: var(--gris);
     border: 1px solid var(--gris2);
-    border-radius: 6px;
+    border-radius: 8px;
   }
 
-  .status-card {
+  .panel { padding: 14px; }
+
+  .hero-status {
     padding: 18px;
+    text-align: center;
+    border-color: rgba(0,230,118,.28);
+    background: linear-gradient(180deg, rgba(0,230,118,.08), rgba(26,26,26,1));
+  }
+
+  .hero-status.emergency {
+    border-color: rgba(232,0,13,.85);
+    background: linear-gradient(180deg, rgba(232,0,13,.18), rgba(26,26,26,1));
+    animation: pulsoBorde 1s infinite;
+  }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 34px;
+    letter-spacing: 2px;
+    line-height: 1;
+    color: var(--verde);
+  }
+
+  .hero-status.emergency .hero-title { color: var(--rojo); }
+
+  .hero-sub {
+    margin-top: 8px;
+    font-size: 11px;
+    color: rgba(240,237,232,.65);
+    line-height: 1.6;
+  }
+
+  @keyframes pulsoBorde { 0%,100% { border-color: rgba(232,0,13,.85); } 50% { border-color: rgba(232,0,13,.25); } }
+
+  .status-card {
+    padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 11px;
   }
 
   .status-row {
@@ -95,9 +130,9 @@
     align-items: center;
     gap: 10px;
     font-size: 11px;
-    letter-spacing: 1.2px;
+    letter-spacing: 1.1px;
     text-transform: uppercase;
-    color: rgba(240,237,232,0.55);
+    color: rgba(240,237,232,0.56);
   }
 
   .badge {
@@ -115,44 +150,65 @@
   .badge-conectado    { background: rgba(0,230,118,0.15); color: var(--verde); border: 1px solid rgba(0,230,118,0.35); }
   .badge-alerta       { background: rgba(255,107,0,0.20); color: var(--naranja); border: 1px solid rgba(255,107,0,0.45); animation: pulso 0.8s infinite; }
   .badge-ok           { background: rgba(0,230,118,0.10); color: var(--verde); border: 1px solid rgba(0,230,118,0.25); }
-  .badge-gris         { background: rgba(255,255,255,0.05); color: rgba(240,237,232,0.36); border: 1px solid rgba(255,255,255,0.10); }
+  .badge-gris         { background: rgba(255,255,255,0.05); color: rgba(240,237,232,0.42); border: 1px solid rgba(255,255,255,0.10); }
   .badge-info         { background: rgba(0,183,255,0.10); color: var(--azul); border: 1px solid rgba(0,183,255,0.25); }
 
   @keyframes pulso { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
 
-  .btn-conectar {
+  .btn {
     width: 100%;
-    padding: 20px;
-    background: var(--rojo);
+    padding: 15px 14px;
+    background: #151515;
     color: var(--blanco);
-    border: none;
-    border-radius: 6px;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 26px;
-    letter-spacing: 2.5px;
+    border: 1px solid #424242;
+    border-radius: 7px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.1px;
     cursor: pointer;
-    transition: background .15s, transform .1s;
-    position: relative;
-    overflow: hidden;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
   }
 
-  .btn-secundario {
-    background: #1a1a1a;
-    border: 1px solid #444;
-    font-size: 20px;
-    padding: 16px;
+  .btn-main {
+    padding: 19px;
+    background: var(--rojo);
+    border-color: rgba(232,0,13,.6);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 25px;
+    letter-spacing: 2.2px;
   }
 
-  .btn-conectar:active { transform: scale(.98); background: #c0000a; }
-  .btn-conectar:disabled { background: #3a0003; color: rgba(240,237,232,.35); cursor: not-allowed; border-color: transparent; }
+  .btn-secondary { background: #1a1a1a; border-color: #444; color: var(--blanco); }
+  .btn-green { background: rgba(0,230,118,.08); border-color: rgba(0,230,118,.28); color: var(--verde); }
+  .btn-orange { background: rgba(255,107,0,.08); border-color: rgba(255,107,0,.35); color: var(--naranja); }
+  .btn-red { background: rgba(232,0,13,.12); border-color: rgba(232,0,13,.38); color: var(--rojo); }
+  .btn-blue { background: rgba(0,183,255,.08); border-color: rgba(0,183,255,.30); color: var(--azul); }
+  .btn:active { transform: scale(.985); }
+  .btn:disabled { background: #3a0003; color: rgba(240,237,232,.35); cursor: not-allowed; border-color: transparent; }
   .btn-ok:disabled { background:#0a2a0a !important; border:1px solid rgba(0,230,118,.7) !important; color:var(--verde) !important; }
+
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .grid-1 { display:grid; grid-template-columns:1fr; gap:10px; }
+
+  .danger-box {
+    display: none;
+    padding: 14px;
+    color: var(--naranja);
+    font-size: 10px;
+    line-height: 1.65;
+    border-color: rgba(255,107,0,.45);
+    background: rgba(255,107,0,.08);
+  }
+  .danger-box.visible { display: block; }
 
   .alerta-emergencia {
     display: none;
     background: rgba(232,0,13,0.12);
     border: 1px solid var(--rojo);
-    border-radius: 6px;
-    padding: 20px;
+    border-radius: 8px;
+    padding: 18px;
     text-align: center;
     animation: parpadeo-borde 1s infinite;
   }
@@ -170,17 +226,17 @@
 
   .alerta-texto {
     font-size: 11px;
-    color: rgba(240,237,232,.68);
+    color: rgba(240,237,232,.72);
     letter-spacing: 1px;
     line-height: 1.8;
   }
 
-  .coords-box { padding: 18px; }
+  .coords-box { padding: 16px; }
 
   .coords-label {
     font-size: 9px;
     letter-spacing: 2px;
-    color: rgba(240,237,232,.38);
+    color: rgba(240,237,232,.42);
     text-transform: uppercase;
     margin-bottom: 10px;
   }
@@ -195,11 +251,11 @@
     white-space: pre-line;
   }
 
-  .coords-valor.sin-gps { color: rgba(240,237,232,.28); font-weight: 400; font-size: 11px; }
+  .coords-valor.sin-gps { color: rgba(240,237,232,.32); font-weight: 400; font-size: 11px; }
 
   .mapa-link {
     display: block;
-    margin-top: 12px;
+    margin-top: 11px;
     padding: 11px 14px;
     background: rgba(0,230,118,.08);
     border: 1px solid rgba(0,230,118,.24);
@@ -223,14 +279,39 @@
 
   .notice-box.visible { display: block; }
 
-  .log-box { overflow: hidden; }
+  .mini-card {
+    background: #111;
+    border: 1px solid #292929;
+    border-radius: 6px;
+    padding: 11px;
+    min-height: 62px;
+  }
+  .mini-label { font-size: 8.5px; color: rgba(240,237,232,.42); letter-spacing:1.4px; text-transform:uppercase; margin-bottom:6px; }
+  .mini-value { font-size: 12px; color: var(--verde); line-height: 1.45; word-break: break-word; }
+  .muted { color: rgba(240,237,232,.42) !important; }
+  .warn { color: var(--naranja) !important; }
+  .danger { color: var(--rojo) !important; }
+  .ok { color: var(--verde) !important; }
 
+  details { background: var(--gris); border: 1px solid var(--gris2); border-radius: 8px; overflow:hidden; }
+  summary {
+    padding: 13px 16px;
+    cursor: pointer;
+    color: rgba(240,237,232,.65);
+    font-size: 10px;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    background: #151515;
+    user-select: none;
+  }
+
+  .log-box { border: none; border-top: 1px solid var(--gris2); border-radius: 0; overflow: hidden; }
   .log-header {
     padding: 10px 16px;
     background: var(--gris2);
     font-size: 9px;
     letter-spacing: 2px;
-    color: rgba(240,237,232,.38);
+    color: rgba(240,237,232,.42);
     text-transform: uppercase;
     display: flex;
     justify-content: space-between;
@@ -240,7 +321,7 @@
   .log-header button {
     background: none;
     border: none;
-    color: rgba(240,237,232,.45);
+    color: rgba(240,237,232,.48);
     font-family: 'IBM Plex Mono', monospace;
     font-size: 9px;
     cursor: pointer;
@@ -249,7 +330,7 @@
 
   .log-contenido {
     padding: 12px 16px;
-    max-height: 185px;
+    max-height: 210px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -257,7 +338,7 @@
   }
 
   .log-entry {
-    font-size: 11px;
+    font-size: 10.5px;
     line-height: 1.5;
     color: rgba(240,237,232,.55);
     padding: 2px 0;
@@ -273,9 +354,15 @@
     text-align: center;
     font-size: 9px;
     letter-spacing: 2px;
-    color: rgba(240,237,232,.18);
+    color: rgba(240,237,232,.20);
     text-transform: uppercase;
-    padding-top: 6px;
+    padding: 4px 0 8px;
+  }
+
+  @media (max-width:420px) {
+    .container { padding-left: 14px; padding-right: 14px; }
+    .grid-2 { grid-template-columns:1fr; }
+    .logo-line { font-size: 46px; }
   }
 </style>
 </head>
@@ -284,28 +371,43 @@
 
   <header>
     <div class="logo-line">MOTO<span>SAFE</span></div>
-    <div class="subtitle">Sistema de detección de accidentes · Cali</div>
+    <div class="subtitle">Modo conductor · Plan B celular · Tracking online</div>
   </header>
 
   <div class="notice-box" id="notice-secure">
-    Para Bluetooth y GPS esta app debe abrirse desde HTTPS o localhost. Si la subes a Hostinger con SSL activo, queda correcto.
+    Para Bluetooth, GPS y Firebase esta app debe abrirse desde HTTPS o localhost. GitHub Pages con HTTPS queda correcto.
+  </div>
+
+  <div class="danger-box visible" id="notice-background">
+    No cierres esta pantalla ni bloquees el celular durante el recorrido. Si Android duerme la página, el Plan B del celular puede dejar de funcionar.
+  </div>
+
+  <div class="hero-status panel" id="hero-status">
+    <div class="hero-title" id="hero-title">SISTEMA EN ESPERA</div>
+    <div class="hero-sub" id="hero-sub">Activa GPS, conecta la moto y deja esta pantalla abierta.</div>
   </div>
 
   <div class="status-card">
-    <div class="status-row"><span>Bluetooth</span><span class="badge badge-desconectado" id="badge-bt">DESCONECTADO</span></div>
     <div class="status-row"><span>GPS celular</span><span class="badge badge-gris" id="badge-gps">EN ESPERA</span></div>
+    <div class="status-row"><span>Bluetooth moto</span><span class="badge badge-desconectado" id="badge-bt">DESCONECTADO</span></div>
+    <div class="status-row"><span>Tracking online</span><span class="badge badge-gris" id="badge-online">INICIANDO</span></div>
     <div class="status-row"><span>Sensor caída</span><span class="badge badge-gris" id="badge-mpu">SIN DATO</span></div>
     <div class="status-row"><span>SMS / ubicación</span><span class="badge badge-gris" id="badge-sms">EN ESPERA</span></div>
     <div class="status-row"><span>Estado sistema</span><span class="badge badge-gris" id="badge-sistema">INACTIVO</span></div>
   </div>
 
-  <button class="btn-conectar btn-secundario" id="btn-gps" onclick="pedirPermisoGPS()">
+  <button class="btn btn-main" id="btn-gps" onclick="pedirPermisoGPS()">
     PASO 1 — ACTIVAR GPS
   </button>
 
-  <button class="btn-conectar" id="btn-conectar" onclick="conectarBluetooth()" disabled>
+  <button class="btn btn-main" id="btn-conectar" onclick="conectarBluetooth()" disabled>
     PASO 2 — CONECTAR MOTO
   </button>
+
+  <div class="grid-2">
+    <button class="btn btn-green" onclick="iniciarNuevoRecorrido()">INICIAR NUEVO RECORRIDO</button>
+    <button class="btn btn-orange" onclick="finalizarEmergencia()">FINALIZAR / GUARDAR INCIDENTE</button>
+  </div>
 
   <div class="alerta-emergencia" id="alerta-emergencia">
     <div class="alerta-titulo">EMERGENCIA</div>
@@ -319,17 +421,35 @@
     <div class="coords-label">Última ubicación disponible</div>
     <div class="coords-valor sin-gps" id="coords-display">— Sin datos de GPS aún —</div>
     <a class="mapa-link" id="mapa-link" href="#" target="_blank" rel="noopener" style="display:none">VER EN GOOGLE MAPS →</a>
-    <a class="mapa-link" id="tracking-link" href="track.html?id=motosafe-gio-001" target="_blank" rel="noopener">VER TRACKING ONLINE →</a>
+    <a class="mapa-link" id="tracking-link" href="track.html?id=motosafe-gio-001" target="_blank" rel="noopener">VER LINK DE AUXILIO ONLINE →</a>
   </div>
 
-  <div class="log-box">
-    <div class="log-header"><span>Registro de eventos</span><button onclick="limpiarLog()">LIMPIAR</button></div>
-    <div class="log-contenido" id="log"></div>
+  <div class="grid-2">
+    <button class="btn btn-blue" onclick="copiarLinkAuxilio()">COPIAR LINK AUXILIO</button>
+    <button class="btn btn-green" onclick="compartirWhatsApp()">WHATSAPP AUXILIO</button>
+    <button class="btn btn-secondary" onclick="copiarDatosOperador()">COPIAR DATOS 123</button>
+    <button class="btn btn-orange" onclick="enviarUbicacionActual()">ENVIAR GPS AL ESP32</button>
   </div>
 
-  <footer>MotoSafe v3.1 · Web Bluetooth API · Tracking online</footer>
+  <div class="panel">
+    <div class="grid-2">
+      <div class="mini-card"><div class="mini-label">Recorrido</div><div class="mini-value" id="recorrido-estado">No iniciado</div></div>
+      <div class="mini-card"><div class="mini-label">Puntos subidos</div><div class="mini-value" id="puntos-online">0</div></div>
+      <div class="mini-card"><div class="mini-label">Última subida online</div><div class="mini-value" id="ultima-subida">—</div></div>
+      <div class="mini-card"><div class="mini-label">Último envío BLE</div><div class="mini-value" id="ultima-ble">—</div></div>
+    </div>
+  </div>
+
+  <details>
+    <summary>VER DETALLES TÉCNICOS</summary>
+    <div class="log-box">
+      <div class="log-header"><span>Registro de eventos</span><button onclick="limpiarLog()">LIMPIAR</button></div>
+      <div class="log-contenido" id="log"></div>
+    </div>
+  </details>
+
+  <footer>MotoSafe v10 · Conductor + Admin seguro · No borrar evidencia</footer>
 </div>
-
 
 <!-- Firebase Realtime Database para tracking online -->
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -344,14 +464,28 @@ let ultimaAcc = null;
 let ultimoGpsMs = 0;
 let wakeLock = null;
 let emergenciaActiva = false;
+let emergenciaInicioMs = null;
+let ultimoEnvioUbicacionBLEMs = 0;
+let ultimoOnlineMs = 0;
+let ultimoPushRutaMs = 0;
+let ultimaRutaLat = null;
+let ultimaRutaLng = null;
+let ultimaSubidaOkMs = null;
+let recorridoIniciadoMs = null;
+let recorridoId = null;
+let puntosSubidos = 0;
+let incidentePendiente = false;
+
+const MIN_REENVIO_UBICACION_BLE_MS = 3500;
+const ONLINE_INTERVALO_MS = 5000;
+const RUTA_MIN_DISTANCIA_M = 8;
+const RUTA_MAX_SIN_PUNTO_MS = 60000;
+const GPS_RECIENTE_MS = 12000;
+const MAX_PUNTOS_INCIDENTE = 120;
 
 // ===============================
 // CONFIGURACIÓN ONLINE FIREBASE
 // ===============================
-// 1) Crea un proyecto en Firebase.
-// 2) Activa Realtime Database.
-// 3) Copia aquí la configuración Web App.
-// 4) Usa el mismo firebaseConfig en track.html.
 const firebaseConfig = {
     apiKey: "AIzaSyDQzG7Z9q8CLnpZu752MnPF8Kwk8h0ktD0",
     authDomain: "motosafe-cali-app-database.firebaseapp.com",
@@ -363,42 +497,35 @@ const firebaseConfig = {
     measurementId: "G-2SZQ09RYPB"
 };
 
-// Cambia estos valores por algo único.
-// Ejemplo URL de visitante:
-// track.html?id=motosafe-gio-001
 const MOTO_ID = "motosafe-gio-001";
-const ONLINE_INTERVALO_MS = 5000; // sube punto cada 5 segundos
-let firebaseDB = null;
-let onlineActivo = false;
-let ultimoOnlineMs = 0;
-let puntosSubidos = 0;
-
 const SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb';
 const CHAR_UUID    = '0000ffe1-0000-1000-8000-00805f9b34fb';
 const NOMBRE_DISPOSITIVO = 'MotoSafe_Cali';
 
+let firebaseDB = null;
+let onlineActivo = false;
+
 function firebaseConfigurado() {
-  return firebaseConfig &&
-    firebaseConfig.apiKey &&
-    !firebaseConfig.apiKey.includes('PON_AQUI') &&
-    firebaseConfig.databaseURL &&
-    !firebaseConfig.databaseURL.includes('PON_AQUI');
+  return firebaseConfig && firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('PON_AQUI') && firebaseConfig.databaseURL && !firebaseConfig.databaseURL.includes('PON_AQUI');
 }
 
 function iniciarFirebaseOnline() {
   if (!firebaseConfigurado()) {
     console.warn('Firebase no configurado. Tracking online desactivado.');
+    setBadge('badge-online', 'SIN CONFIG', 'desconectado');
     return;
   }
-
   try {
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     firebaseDB = firebase.database();
     onlineActivo = true;
-    console.log('Firebase online activo');
+    setBadge('badge-online', 'ACTIVO', 'conectado');
+    log('Tracking online activo con Firebase.', 'ok');
   } catch (err) {
     console.error('Error iniciando Firebase:', err);
     onlineActivo = false;
+    setBadge('badge-online', 'ERROR', 'desconectado');
+    log(`Error iniciando Firebase: ${err.message}`, 'error');
   }
 }
 
@@ -409,7 +536,7 @@ function log(msg, tipo = 'info') {
   entry.className = `log-entry ${tipo}`;
   entry.textContent = `[${ts}] ${msg}`;
   div.appendChild(entry);
-  while (div.children.length > 80) div.removeChild(div.firstChild);
+  while (div.children.length > 100) div.removeChild(div.firstChild);
   div.scrollTop = div.scrollHeight;
 }
 
@@ -417,8 +544,22 @@ function limpiarLog() { document.getElementById('log').innerHTML = ''; }
 
 function setBadge(id, texto, clase) {
   const el = document.getElementById(id);
+  if (!el) return;
   el.textContent = texto;
   el.className = `badge badge-${clase}`;
+}
+
+function setMini(id, texto, clase = '') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = texto;
+  el.className = `mini-value ${clase}`;
+}
+
+function actualizarHero(titulo, texto, emergencia = false) {
+  document.getElementById('hero-title').textContent = titulo;
+  document.getElementById('hero-sub').textContent = texto;
+  document.getElementById('hero-status').classList.toggle('emergency', !!emergencia);
 }
 
 function mostrarAvisosIniciales() {
@@ -439,8 +580,45 @@ async function mantenerPantallaActiva() {
   }
 }
 
+function cargarUltimaUbicacionLocal() {
+  try {
+    const raw = localStorage.getItem('motosafe_ultima_ubicacion');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (typeof data.lat === 'number' && typeof data.lng === 'number') {
+      ultimaLat = data.lat;
+      ultimaLng = data.lng;
+      ultimaAcc = data.acc || null;
+      ultimoGpsMs = data.timestamp || 0;
+      mostrarCoordenadas(ultimaLat, ultimaLng, ultimaAcc, 'ÚLTIMA LOCAL');
+      log('Última ubicación local cargada como respaldo.', 'info');
+    }
+  } catch (err) {
+    console.warn('No se pudo cargar localStorage:', err);
+  }
+}
+
+function guardarUltimaUbicacionLocal() {
+  try {
+    if (ultimaLat === null || ultimaLng === null) return;
+    localStorage.setItem('motosafe_ultima_ubicacion', JSON.stringify({
+      lat: ultimaLat,
+      lng: ultimaLng,
+      acc: ultimaAcc,
+      timestamp: ultimoGpsMs || Date.now()
+    }));
+  } catch (err) {
+    console.warn('No se pudo guardar localStorage:', err);
+  }
+}
+
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && btChar) mantenerPantallaActiva();
+  if (document.visibilityState === 'visible') {
+    if (btChar) mantenerPantallaActiva();
+    log('La app volvió a primer plano.', 'info');
+  } else {
+    log('Advertencia: app en segundo plano. El Plan B celular podría dormirse.', 'warn');
+  }
 });
 
 function pedirPermisoGPS() {
@@ -464,6 +642,7 @@ function pedirPermisoGPS() {
       btnGPS.classList.add('btn-ok');
       iniciarGPSContinuo();
       mantenerPantallaActiva();
+      actualizarHero('GPS ACTIVO', 'Ahora conecta la moto por Bluetooth y deja esta pantalla abierta.', false);
       log(`GPS activo: ${ultimaLat.toFixed(6)}, ${ultimaLng.toFixed(6)} ±${Math.round(ultimaAcc)}m`, 'ok');
     },
     (err) => {
@@ -496,17 +675,30 @@ function actualizarGPS(pos) {
   ultimaAcc = pos.coords.accuracy;
   ultimoGpsMs = Date.now();
   mostrarCoordenadas(ultimaLat, ultimaLng, ultimaAcc, 'CELULAR');
-  subirUbicacionOnline('gps_celular');
+  guardarUltimaUbicacionLocal();
+  subirUbicacionOnline('gps_celular', false);
 }
 
-async function subirUbicacionOnline(evento = 'actualizacion') {
-  if (!onlineActivo || !firebaseDB || ultimaLat === null || ultimaLng === null) return;
+function gpsTexto(acc) {
+  const a = Math.round(acc || 0);
+  if (a <= 25) return `OK ±${a}M`;
+  if (a <= 80) return `MEDIA ±${a}M`;
+  return `BAJA ±${a}M`;
+}
 
+function distanciaMetros(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const aLat1 = lat1 * Math.PI / 180;
+  const aLat2 = lat2 * Math.PI / 180;
+  const a = Math.sin(dLat/2) ** 2 + Math.cos(aLat1) * Math.cos(aLat2) * Math.sin(dLng/2) ** 2;
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function crearPunto(evento) {
   const ahora = Date.now();
-  if (evento === 'gps_celular' && ahora - ultimoOnlineMs < ONLINE_INTERVALO_MS) return;
-  ultimoOnlineMs = ahora;
-
-  const punto = {
+  return {
     lat: Number(ultimaLat.toFixed(6)),
     lng: Number(ultimaLng.toFixed(6)),
     acc: ultimaAcc ? Math.round(ultimaAcc) : null,
@@ -515,24 +707,48 @@ async function subirUbicacionOnline(evento = 'actualizacion') {
     bluetooth: !!btChar,
     timestamp: ahora,
     fecha: new Date(ahora).toISOString(),
-    fuente: 'celular_web'
+    fuente: 'celular_web',
+    recorridoId: recorridoId || null,
+    motoId: MOTO_ID
   };
+}
+
+function debeGuardarPuntoRuta(evento, forzar) {
+  if (forzar || emergenciaActiva || evento !== 'gps_celular') return true;
+  if (ultimaRutaLat === null || ultimaRutaLng === null) return true;
+  const ahora = Date.now();
+  const dist = distanciaMetros(ultimaRutaLat, ultimaRutaLng, ultimaLat, ultimaLng);
+  return dist >= RUTA_MIN_DISTANCIA_M || (ahora - ultimoPushRutaMs) >= RUTA_MAX_SIN_PUNTO_MS;
+}
+
+async function subirUbicacionOnline(evento = 'actualizacion', forzar = false) {
+  if (!onlineActivo || !firebaseDB || ultimaLat === null || ultimaLng === null) return;
+
+  const ahora = Date.now();
+  if (!forzar && evento === 'gps_celular' && ahora - ultimoOnlineMs < ONLINE_INTERVALO_MS) return;
+  ultimoOnlineMs = ahora;
+
+  const punto = crearPunto(evento);
+  const guardarRuta = debeGuardarPuntoRuta(evento, forzar);
 
   try {
     await firebaseDB.ref(`motos/${MOTO_ID}/estado`).set(punto);
-    await firebaseDB.ref(`motos/${MOTO_ID}/trayecto`).push(punto);
-    puntosSubidos++;
+    if (guardarRuta) {
+      await firebaseDB.ref(`motos/${MOTO_ID}/trayecto`).push(punto);
+      await firebaseDB.ref(`motos/${MOTO_ID}/trayecto_actual`).push(punto);
+      ultimaRutaLat = ultimaLat;
+      ultimaRutaLng = ultimaLng;
+      ultimoPushRutaMs = ahora;
+      puntosSubidos++;
+      setMini('puntos-online', puntosSubidos.toString());
+    }
+    ultimaSubidaOkMs = ahora;
+    setMini('ultima-subida', new Date(ahora).toLocaleTimeString('es-CO', { hour12:false }), 'ok');
     if (puntosSubidos === 1 || evento !== 'gps_celular') log('Tracking online actualizado.', 'ok');
   } catch (err) {
+    setBadge('badge-online', 'ERROR', 'desconectado');
     log(`Error subiendo tracking online: ${err.message}`, 'error');
   }
-}
-
-function gpsTexto(acc) {
-  const a = Math.round(acc || 0);
-  if (a <= 25) return `OK ±${a}M`;
-  if (a <= 80) return `MEDIA ±${a}M`;
-  return `BAJA ±${a}M`;
 }
 
 async function conectarBluetooth() {
@@ -563,10 +779,12 @@ async function conectarBluetooth() {
     setBadge('badge-sistema', 'MONITOREANDO', 'ok');
     document.getElementById('btn-conectar').textContent = 'CONECTADO — MONITOREANDO';
     document.getElementById('btn-conectar').disabled = true;
+    actualizarHero('MONITOREANDO', 'GPS, Bluetooth y tracking online listos. Mantén esta pantalla abierta.', false);
 
     log(`Conectado a ${btDevice.name}`, 'ok');
     log('App lista para enviar ubicación si el ESP32 la solicita.', 'info');
     await enviarDatos('APP:READY\n', false);
+    subirUbicacionOnline('bt_conectado', true);
     mantenerPantallaActiva();
   } catch (err) {
     setBadge('badge-bt', 'ERROR', 'desconectado');
@@ -579,18 +797,24 @@ function recibirMensaje(event) {
   const msg = new TextDecoder('utf-8').decode(event.target.value).trim();
   if (!msg) return;
   log(`ESP32 → ${msg}`, msg.startsWith('ER:') ? 'error' : 'warn');
-  subirUbicacionOnline(msg);
 
   switch (msg) {
     case 'CMD:PEDIR_UBICACION':
-      emergenciaActiva = true;
-      mostrarAlerta('CAÍDA DETECTADA<br>Enviando ubicación del celular al dispositivo...');
+      activarEmergencia('CAÍDA DETECTADA', 'El ESP32 pidió la ubicación del celular...');
+      setBadge('badge-sms', 'GPS CEL SOLICITADO', 'alerta');
+      enviarUbicacionEmergencia();
+      break;
+
+    case 'ST:PLAN_B_CELULAR':
+    case 'ER:GPS_NO_FIX':
+      activarEmergencia('PLAN B CELULAR', 'GPS del módulo sin fix. Enviando ubicación del celular por Bluetooth...');
+      setBadge('badge-sms', 'PLAN B CELULAR', 'alerta');
       enviarUbicacionEmergencia();
       break;
 
     case 'ST:EMERGENCIA':
-      emergenciaActiva = true;
-      mostrarAlerta('CAÍDA DETECTADA<br>Buscando GPS del módulo y respaldo del celular...');
+      activarEmergencia('CAÍDA DETECTADA', 'Primero GPS del módulo; si falla, Plan B celular.');
+      setBadge('badge-sms', 'BUSCANDO GPS', 'info');
       break;
 
     case 'ST:OK':
@@ -598,6 +822,7 @@ function recibirMensaje(event) {
       emergenciaActiva = false;
       ocultarAlerta();
       setBadge('badge-sistema', 'MONITOREANDO', 'ok');
+      actualizarHero('MONITOREANDO', 'Emergencia cancelada. El sistema continúa activo.', false);
       break;
 
     case 'ST:MPU_OK':
@@ -621,10 +846,30 @@ function recibirMensaje(event) {
       setBadge('badge-sms', 'GPS CEL RECIBIDO', 'info');
       break;
 
+    case 'ST:BLE_LOC_STANDBY':
+      setBadge('badge-sms', 'GPS CEL EN ESPERA', 'info');
+      log('Ubicación del celular guardada como respaldo; se usará si falla el GPS del módulo.', 'info');
+      break;
+
+    case 'ST:SMS_LOC_CEL_OK':
+      setBadge('badge-sms', 'CELULAR ENVIADO', 'conectado');
+      log('El ESP32 envió por SMS la ubicación del celular como Plan B.', 'ok');
+      break;
+
+    case 'ER:BLE_NO_PHONE':
+      setBadge('badge-sms', 'SIN CEL BLE', 'alerta');
+      log('El ESP32 no tiene celular conectado por Bluetooth para usar Plan B.', 'warn');
+      break;
+
+    case 'ER:BLE_LOC_INVALID':
+    case 'ER:BLE_LOC_FORMAT':
+      setBadge('badge-sms', 'GPS CEL INVÁLIDO', 'desconectado');
+      log('El ESP32 rechazó la coordenada del celular por formato o rango inválido.', 'error');
+      break;
+
     case 'ST:SMS_LOC_OK':
     case 'OK:SMS_UBICACION_ENVIADO':
       setBadge('badge-sms', 'UBICACIÓN ENVIADA', 'conectado');
-      ocultarAlerta();
       log('El ESP32 confirmó SMS de ubicación.', 'ok');
       break;
 
@@ -650,11 +895,29 @@ function recibirMensaje(event) {
       if (msg.startsWith('LAT:')) log('Coordenada recibida en formato LAT.', 'info');
       break;
   }
+
+  subirUbicacionOnline(`esp32_${msg}`, true);
+}
+
+function activarEmergencia(titulo, texto) {
+  if (!emergenciaActiva) emergenciaInicioMs = Date.now();
+  emergenciaActiva = true;
+  incidentePendiente = true;
+  mostrarAlerta(`${titulo}<br>${texto}`);
+  setBadge('badge-sistema', 'EMERGENCIA', 'alerta');
+  actualizarHero('EMERGENCIA ACTIVA', texto.replace(/<br>/g, ' '), true);
+  subirUbicacionOnline('emergencia_detectada', true);
 }
 
 async function enviarUbicacionEmergencia() {
-  const gpsReciente = ultimaLat !== null && ultimaLng !== null && (Date.now() - ultimoGpsMs) < 12000;
+  const ahora = Date.now();
+  if (ahora - ultimoEnvioUbicacionBLEMs < MIN_REENVIO_UBICACION_BLE_MS) {
+    log('Solicitud de ubicación BLE repetida muy rápido; se evita duplicado.', 'warn');
+    return;
+  }
+  ultimoEnvioUbicacionBLEMs = ahora;
 
+  const gpsReciente = ultimaLat !== null && ultimaLng !== null && (Date.now() - ultimoGpsMs) < GPS_RECIENTE_MS;
   if (gpsReciente) {
     await enviarUbicacionActual();
     return;
@@ -671,6 +934,8 @@ async function enviarUbicacionEmergencia() {
       if (ultimaLat !== null && ultimaLng !== null) {
         log('Enviando última ubicación conocida como respaldo.', 'warn');
         await enviarUbicacionActual();
+      } else {
+        setBadge('badge-sms', 'SIN GPS CEL', 'desconectado');
       }
     },
     { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
@@ -680,11 +945,16 @@ async function enviarUbicacionEmergencia() {
 async function enviarUbicacionActual() {
   if (ultimaLat === null || ultimaLng === null) {
     log('No hay ubicación disponible para enviar.', 'error');
-    return;
+    return false;
   }
   const texto = `LAT:${ultimaLat.toFixed(6)},LNG:${ultimaLng.toFixed(6)}\n`;
-  await enviarDatos(texto, true);
-  mostrarCoordenadas(ultimaLat, ultimaLng, ultimaAcc, 'CELULAR ENVIADA');
+  const ok = await enviarDatos(texto, true);
+  if (ok) {
+    setMini('ultima-ble', new Date().toLocaleTimeString('es-CO', { hour12:false }), 'ok');
+    mostrarCoordenadas(ultimaLat, ultimaLng, ultimaAcc, 'CELULAR ENVIADA');
+    subirUbicacionOnline('ble_ubicacion_enviada', true);
+  }
+  return ok;
 }
 
 async function enviarDatos(texto, mostrar = true) {
@@ -709,7 +979,8 @@ function mostrarCoordenadas(lat, lng, acc = null, fuente = 'GPS') {
   const link = document.getElementById('mapa-link');
   display.className = 'coords-valor';
   const accTxt = acc ? `\nPRECISIÓN: ±${Math.round(acc)}m` : '';
-  display.textContent = `FUENTE: ${fuente}\nLAT: ${lat.toFixed(6)}\nLNG: ${lng.toFixed(6)}${accTxt}`;
+  const edadTxt = ultimoGpsMs ? `\nACTUALIZADO: ${new Date(ultimoGpsMs).toLocaleTimeString('es-CO', { hour12:false })}` : '';
+  display.textContent = `FUENTE: ${fuente}\nLAT: ${lat.toFixed(6)}\nLNG: ${lng.toFixed(6)}${accTxt}${edadTxt}`;
   link.href = `https://maps.google.com/maps?q=${lat},${lng}`;
   link.style.display = 'block';
 }
@@ -732,15 +1003,158 @@ function alDesconectar() {
   const btn = document.getElementById('btn-conectar');
   btn.textContent = 'RECONECTAR MOTO';
   btn.disabled = false;
-  log('MotoSafe desconectado. El GPS del celular queda activo como respaldo.', 'error');
+  actualizarHero(emergenciaActiva ? 'EMERGENCIA / SIN BLUETOOTH' : 'MOTO DESCONECTADA', 'El GPS del celular puede seguir subiendo online, pero el Plan B por BLE queda caído.', emergenciaActiva);
+  log('MotoSafe desconectado. El GPS del celular queda activo como respaldo online.', 'error');
+  subirUbicacionOnline('bt_desconectado', true);
 }
 
+async function iniciarNuevoRecorrido() {
+  if (!onlineActivo || !firebaseDB) {
+    alert('Firebase no está activo. No se puede limpiar/iniciar recorrido online.');
+    return;
+  }
+  const ok = confirm('¿Iniciar nuevo recorrido? Esto limpia la ruta actual visible, pero NO borra incidentes históricos.');
+  if (!ok) return;
+
+  try {
+    recorridoIniciadoMs = Date.now();
+    recorridoId = `rec_${new Date(recorridoIniciadoMs).toISOString().replace(/[:.]/g, '-')}`;
+    puntosSubidos = 0;
+    ultimaRutaLat = null;
+    ultimaRutaLng = null;
+    ultimoPushRutaMs = 0;
+    await firebaseDB.ref(`motos/${MOTO_ID}/trayecto`).remove();
+    await firebaseDB.ref(`motos/${MOTO_ID}/trayecto_actual`).remove();
+    await firebaseDB.ref(`motos/${MOTO_ID}/recorrido_actual`).set({
+      id: recorridoId,
+      iniciadoMs: recorridoIniciadoMs,
+      fecha: new Date(recorridoIniciadoMs).toISOString(),
+      estado: 'activo'
+    });
+    setMini('recorrido-estado', `Activo ${new Date(recorridoIniciadoMs).toLocaleTimeString('es-CO', { hour12:false })}`, 'ok');
+    setMini('puntos-online', '0');
+    log('Nuevo recorrido iniciado. Ruta actual limpiada sin borrar incidentes.', 'ok');
+    subirUbicacionOnline('nuevo_recorrido', true);
+  } catch (err) {
+    log(`Error iniciando nuevo recorrido: ${err.message}`, 'error');
+    alert(`Firebase no permitió iniciar recorrido: ${err.message}`);
+  }
+}
+
+async function finalizarEmergencia() {
+  if (!onlineActivo || !firebaseDB) {
+    alert('Firebase no está activo. No se puede guardar incidente.');
+    return;
+  }
+  const ok = confirm('¿Finalizar y guardar incidente/resumen? No se borrará la última ubicación pública.');
+  if (!ok) return;
+
+  try {
+    const incidenteId = await guardarIncidenteHistorico('finalizado_manual');
+    emergenciaActiva = false;
+    incidentePendiente = false;
+    ocultarAlerta();
+    setBadge('badge-sistema', btChar ? 'MONITOREANDO' : 'INACTIVO', btChar ? 'ok' : 'gris');
+    actualizarHero(btChar ? 'MONITOREANDO' : 'FINALIZADO', `Incidente guardado: ${incidenteId}`, false);
+    await subirUbicacionOnline('emergencia_finalizada', true);
+    log(`Incidente guardado: ${incidenteId}`, 'ok');
+  } catch (err) {
+    log(`Error guardando incidente: ${err.message}`, 'error');
+    alert(`No se pudo guardar el incidente: ${err.message}`);
+  }
+}
+
+async function guardarIncidenteHistorico(motivo = 'manual') {
+  const ahora = Date.now();
+  const id = `inc_${new Date(ahora).toISOString().replace(/[:.]/g, '-')}`;
+  let ultimosPuntos = [];
+
+  try {
+    const snap = await firebaseDB.ref(`motos/${MOTO_ID}/trayecto`).limitToLast(MAX_PUNTOS_INCIDENTE).once('value');
+    snap.forEach(child => {
+      const p = child.val();
+      if (p && typeof p.lat === 'number' && typeof p.lng === 'number') ultimosPuntos.push(p);
+    });
+  } catch (err) {
+    log(`No se pudo copiar ruta para incidente: ${err.message}`, 'warn');
+  }
+
+  const resumen = {
+    id,
+    motoId: MOTO_ID,
+    motivo,
+    emergenciaInicioMs: emergenciaInicioMs || null,
+    guardadoMs: ahora,
+    fecha: new Date(ahora).toISOString(),
+    ultimaUbicacion: ultimaLat !== null && ultimaLng !== null ? {
+      lat: Number(ultimaLat.toFixed(6)),
+      lng: Number(ultimaLng.toFixed(6)),
+      acc: ultimaAcc ? Math.round(ultimaAcc) : null,
+      timestamp: ultimoGpsMs || ahora,
+      maps: `https://maps.google.com/maps?q=${ultimaLat},${ultimaLng}`
+    } : null,
+    trackingUrl: obtenerTrackingUrl(),
+    bluetoothConectado: !!btChar,
+    puntosRutaGuardados: ultimosPuntos.length,
+    recorridoId: recorridoId || null,
+    ruta: ultimosPuntos
+  };
+
+  await firebaseDB.ref(`motos/${MOTO_ID}/incidentes/${id}`).set(resumen);
+  return id;
+}
+
+function obtenerTrackingUrl() {
+  return new URL(`track.html?id=${encodeURIComponent(MOTO_ID)}`, window.location.href).href;
+}
+
+function obtenerMapsUrl() {
+  if (ultimaLat === null || ultimaLng === null) return '';
+  return `https://maps.google.com/maps?q=${ultimaLat},${ultimaLng}`;
+}
+
+async function copiarTexto(texto, okMsg) {
+  try {
+    await navigator.clipboard.writeText(texto);
+    log(okMsg, 'ok');
+    alert(okMsg);
+  } catch (err) {
+    log('No se pudo copiar automáticamente. Copia manualmente desde pantalla.', 'warn');
+    alert('No se pudo copiar automáticamente. Mantén presionado el texto o copia el enlace desde el navegador.');
+  }
+}
+
+function copiarLinkAuxilio() {
+  copiarTexto(obtenerTrackingUrl(), 'Link de auxilio copiado.');
+}
+
+function copiarDatosOperador() {
+  const maps = obtenerMapsUrl() || 'Sin ubicación GPS todavía';
+  const texto = `MotoSafe Cali\nEstado: ${emergenciaActiva ? 'EMERGENCIA ACTIVA' : 'Monitoreando'}\nMoto ID: ${MOTO_ID}\nUbicación: ${maps}\nTracking: ${obtenerTrackingUrl()}\nActualizado: ${ultimoGpsMs ? new Date(ultimoGpsMs).toLocaleString('es-CO', { hour12:false }) : 'sin dato'}\nPrecisión: ${ultimaAcc ? Math.round(ultimaAcc) + ' m' : 'sin dato'}`;
+  copiarTexto(texto, 'Datos para operador copiados.');
+}
+
+function compartirWhatsApp() {
+  const maps = obtenerMapsUrl();
+  const texto = emergenciaActiva
+    ? `🚨 MotoSafe: emergencia activa.\nUbicación: ${maps || 'sin GPS aún'}\nTracking: ${obtenerTrackingUrl()}`
+    : `MotoSafe tracking online:\n${obtenerTrackingUrl()}${maps ? `\nÚltima ubicación: ${maps}` : ''}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank', 'noopener');
+}
+
+function actualizarUIRecorridoInicial() {
+  setMini('recorrido-estado', recorridoIniciadoMs ? `Activo ${new Date(recorridoIniciadoMs).toLocaleTimeString('es-CO', { hour12:false })}` : 'No iniciado', recorridoIniciadoMs ? 'ok' : 'muted');
+  setMini('puntos-online', puntosSubidos.toString());
+  setMini('ultima-subida', ultimaSubidaOkMs ? new Date(ultimaSubidaOkMs).toLocaleTimeString('es-CO', { hour12:false }) : '—');
+  setMini('ultima-ble', '—');
+}
+
+cargarUltimaUbicacionLocal();
 iniciarFirebaseOnline();
 mostrarAvisosIniciales();
-if (onlineActivo) log('Tracking online activo con Firebase.', 'ok');
-else log('Tracking online desactivado: falta configurar Firebase.', 'warn');
+actualizarUIRecorridoInicial();
 log('Sistema MotoSafe listo.', 'ok');
-log('Activa GPS y conecta la moto. Sin GPS/BLE, el Plan B queda de adorno caro.', 'info');
+log('Activa GPS y conecta la moto. Plan B: si el GPS del módulo falla, se envía ubicación del celular.', 'info');
 </script>
 </body>
 </html>
